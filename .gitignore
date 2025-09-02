@@ -1,0 +1,108 @@
+# Large files and directories
+*.bin
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Large data files
+*.dat
+*.db
+*.sqlite
+*.h5
+*.hdf5
+*.nc
+*.netcdf
+
+# Large media files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.3gp
+
+# Large image files
+*.tiff
+*.tif
+*.bmp
+*.psd
+*.raw
+*.cr2
+*.nef
+*.orf
+*.sr2
+
+# Compressed archives over certain size
+*.zip
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Temporary and cache files
+*.tmp
+*.temp
+*.cache
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Large model files
+*.model
+*.pkl
+*.pickle
+*.joblib
