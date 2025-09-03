@@ -1,0 +1,22 @@
+site_name: Groundwater-Baseflow Correlation Research
+site_description: Research codes and analysis for groundwater-baseflow correlation in the Great Salt Lake Basin
+
+theme:
+  name: material
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Data Overview: data-overview.md
+  - Results:
+    - Overview: results/overview.md
+    - Figures: results/figures.md
+  - Methods:
+    - Methodology: methods/methodology.md
+    - Data Processing: methods/data-processing.md
+  - API Reference:
+    - Functions: api/functions.md
+  - About: about.md
