@@ -21,7 +21,6 @@ This project analyzes correlations between groundwater levels (WTE) and baseflow
 6. **Visualization**: Results and figures
 
 ## Quick Start
-
 1. [Installation](installation.md) - Setup environment
 2. [Data Overview](data-overview.md) - Understand datasets  
 3. [Analysis Notebooks](notebooks.md) - Run workflow

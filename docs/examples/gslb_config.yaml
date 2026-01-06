@@ -1,0 +1,50 @@
+# Example configuration for Great Salt Lake Basin (GSLB) study
+# This is a basin-specific example. For generic template, see defaults.yaml
+
+data_paths:
+  groundwater_csv: "data/raw/groundwater/GSLB_1900-2023_TS_with_aquifers.csv"
+  streamflow_dir: "data/raw/streamflow/GSLB_ML"
+  subbasin_shp: "data/raw/hydrography/gsl_catchment.shp"
+  streams_shp: "data/raw/hydrography/gslb_stream.shp"
+  gages_csv: "data/raw/hydrography/gsl_nwm_gage.csv"
+  wells_shp: "data/raw/hydrography/well_shp.shp"
+  reach_elevation_csv: "data/raw/streamflow/reach_centroids_with_Elev.csv"
+
+processing:
+  terminal_gages:
+    manual_remove: [10171000, 10167000]
+    manual_add: [10163000, 10153100, 10152000]
+  
+  well_filtering:
+    min_observations: 5
+    min_time_span_days: 730
+    z_score_threshold: 3.0
+    iqr_multiplier: 1.5
+  
+  elevation_filter:
+    vertical_buffer_meters: 30.0
+    wte_units_feet: true
+    conversion_factor: 0.3048
+  
+  interpolation:
+    target_frequency: "D"
+    extrapolate: false
+    max_gap_days: 365
+  
+  bfd:
+    bfd_column: "ML_BFD"
+    bfd_value: 1
+  
+  delta_metrics:
+    baseline_method: "first_bfd"
+    delta_wte_column: "delta_wte"
+    delta_q_column: "delta_q"
+  
+  analysis:
+    correlation_methods: ["pearson", "spearman"]
+    mi_n_bins: 10
+    ccf_max_lag_days: 3650
+    min_pairs_for_analysis: 10
+
+output_dir: "outputs"
+

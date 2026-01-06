@@ -1,0 +1,49 @@
+# Default configuration file for gwbase
+# Update paths to match your data directory structure
+
+data_paths:
+  groundwater_csv: "data/raw/groundwater/groundwater_timeseries.csv"
+  streamflow_dir: "data/raw/streamflow"
+  subbasin_shp: "data/raw/hydrography/catchments.shp"
+  streams_shp: "data/raw/hydrography/streams.shp"
+  gages_csv: "data/raw/hydrography/gages.csv"
+  wells_shp: "data/raw/hydrography/wells.shp"
+  reach_elevation_csv: null  # Optional: path to reach elevation CSV if available
+
+processing:
+  terminal_gages:
+    manual_remove: []  # List of gage IDs to manually exclude from terminal list
+    manual_add: []     # List of gage IDs to manually add to terminal list
+  
+  well_filtering:
+    min_observations: 5        # Minimum number of observations per well
+    min_time_span_days: 730    # Minimum time span (2 years)
+    z_score_threshold: 3.0     # Z-score threshold for outlier detection
+    iqr_multiplier: 1.5        # IQR multiplier for outlier detection
+  
+  elevation_filter:
+    vertical_buffer_meters: 30.0  # Vertical buffer threshold (meters)
+    wte_units_feet: true          # Set to false if WTE is already in meters
+    conversion_factor: 0.3048     # Feet to meters conversion
+  
+  interpolation:
+    target_frequency: "D"      # Target frequency: "D" for daily
+    extrapolate: false         # Allow extrapolation beyond data range
+    max_gap_days: 365          # Maximum gap size for interpolation
+  
+  bfd:
+    bfd_column: "ML_BFD"       # Column name for baseflow-dominated flag
+    bfd_value: 1               # Value indicating baseflow-dominated day
+  
+  delta_metrics:
+    baseline_method: "first_bfd"  # Method: "first_bfd", "mean", or "median"
+    delta_wte_column: "delta_wte"
+    delta_q_column: "delta_q"
+  
+  analysis:
+    correlation_methods: ["pearson", "spearman"]
+    mi_n_bins: 10              # Number of bins for mutual information
+    ccf_max_lag_days: 3650     # Maximum lag for cross-correlation (10 years)
+    min_pairs_for_analysis: 10 # Minimum number of pairs required for analysis
+
+output_dir: "outputs"
