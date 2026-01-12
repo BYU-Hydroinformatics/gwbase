@@ -23,7 +23,7 @@ pip install gwbase
 
 ### From Source
 ```bash
-git clone https://github.com/your-username/gwbase.git
+git clone https://github.com/BYU-Hydroinformatics/gwbase.git
 cd gwbase
 pip install -e .
 ```
