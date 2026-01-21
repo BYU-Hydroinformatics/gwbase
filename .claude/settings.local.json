@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(pip install:*)",
+      "Bash(mkdocs:*)",
+      "Bash(pkill:*)",
+      "Bash(cp:*)",
+      "Bash(python:*)"
+    ],
+    "deny": [],
+    "includeCoAuthoredBy": false
+  }
+}
