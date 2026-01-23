@@ -59,7 +59,8 @@ def identify_terminal_gages(
         raise ValueError(f"Stream network must have LINKNO and DSLINKNO columns")
     
     for _, row in stream_gdf.iterrows():
-        if pd.notna(row[dslinkno_col]) and row[dslinkno_col] > 0:
+        if (pd.notna(row[linkno_col]) and pd.notna(row[dslinkno_col]) 
+            and row[dslinkno_col] > 0):
             G.add_edge(int(row[linkno_col]), int(row[dslinkno_col]))
     
     # Spatial join: assign catchments to gages
