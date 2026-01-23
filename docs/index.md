@@ -1,27 +1,57 @@
-# GWBASE
+# GWBASE Documentation
 
-A Scalable Framework to Quantify Groundwater–Baseflow Correlations Using Paired Well and Streamflow Observations
+**Groundwater-Baseflow Analysis System**
+
+GWBASE is an algorithm for assessing the impact of groundwater decline on baseflow in US streams. It provides a systematic workflow for linking groundwater level changes to streamflow variations under baseflow-dominated conditions.
 
 ## Overview
 
-This project analyzes correlations between groundwater levels (WTE) and baseflow using:
+Baseflow—the portion of streamflow derived from groundwater discharge—is critical for maintaining perennial streamflow, supporting aquatic ecosystems, and sustaining water supplies during dry periods. GWBASE quantifies the relationship between changes in water table elevation (ΔWTE) and changes in streamflow (ΔQ) to assess how groundwater decline affects baseflow.
 
-- **Groundwater data**: Well measurements (1900-2023)
-- **Streamflow data**: USGS gage measurements 
-- **Spatial data**: Basin boundaries, stream networks
-- **Elevation data**: Stream reach elevations
+## Key Features
 
-## Workflow
+- **9-step analytical workflow** from raw data to statistical analysis
+- **Spatial analysis** linking wells to stream networks and gages
+- **PCHIP interpolation** for temporal alignment of groundwater data
+- **Elevation-based filtering** to identify hydraulically connected wells
+- **Baseflow-dominated period detection** using machine learning classification
+- **Delta metrics computation** (ΔWTE, ΔQ) with lag analysis
+- **Statistical analysis** including linear regression, mutual information, and cross-correlation
 
-1. **Data Inventory**: Quality assessment
-2. **Terminal Gages**: Downstream gage identification
-3. **PCHIP Interpolation**: Gap-filling for sparse data
-4. **Well-Gage Pairing**: Spatial associations
-5. **Delta Metrics**: Change-based correlation analysis
-6. **Visualization**: Results and figures
+## Documentation Contents
+
+- [Installation](installation.md) - Setting up GWBASE
+- [Process Overview](overview.md) - Understanding the 9-step GWBASE workflow
+- [Code Organization](code-organization.md) - Structure of the gwbase package
+- [Data Guide](data-guide.md) - Preparing and organizing input data
+- [Running the Code](running-the-code.md) - Executing the workflow
+- [API Reference](api-reference.md) - Function documentation
 
 ## Quick Start
-1. [Installation](installation.md) - Setup environment
-2. [Data Overview](data-overview.md) - Understand datasets  
-3. [Analysis Notebooks](notebooks.md) - Run workflow
-4. [Results](results/overview.md) - View findings
+
+```python
+import gwbase
+
+# Load your data
+stream_gdf = gwbase.load_hydrography_data('data/raw/streams.shp')
+wells_gdf, well_ts, well_info = gwbase.load_groundwater_data('data/raw/groundwater/')
+
+# Run interpolation
+daily_data = gwbase.interpolate_daily_pchip(well_ts)
+
+# Compute delta metrics
+data_with_deltas = gwbase.compute_delta_metrics(paired_data)
+
+# Analyze relationships
+gage_stats = gwbase.compute_regression_by_gage(data_with_deltas)
+```
+
+## Citation
+
+If you use GWBASE in your research, please cite:
+
+> Li, X., Jones, N.L., Williams, G.P., Aghababaei, A., & Hales, R.C. (2024). GWBASE – An Algorithm for Assessing the Impact of Groundwater Decline on Baseflow in US Streams.
+
+## License
+
+GWBASE is released under the MIT License.

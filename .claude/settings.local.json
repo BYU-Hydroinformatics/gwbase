@@ -9,7 +9,9 @@
       "Bash(mkdocs:*)",
       "Bash(pkill:*)",
       "Bash(cp:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false
