@@ -115,3 +115,5 @@ reports/
 notebooks/*.png
 notebooks/*.svg
 notebooks/*.csv
+# Claude Code CLI configuration
+.claude/
