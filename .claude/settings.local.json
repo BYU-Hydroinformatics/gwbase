@@ -11,7 +11,8 @@
       "Bash(cp:*)",
       "Bash(python:*)",
       "Bash(python3:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false
