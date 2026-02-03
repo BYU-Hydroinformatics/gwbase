@@ -12,7 +12,8 @@
       "Bash(python:*)",
       "Bash(python3:*)",
       "Bash(wc:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(source /Users/xueyi/Documents/code/gwbase/.venv/bin/activate)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false

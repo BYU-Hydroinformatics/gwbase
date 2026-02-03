@@ -384,29 +384,29 @@ def main():
     print("-"*60)
 
     # Example workflow (commented out - uncomment with actual data):
-    """
+
     # Load data
     stream_gdf = gwbase.load_hydrography_data(
-        os.path.join(dirs['raw'], 'hydrography/gslb_str.shp')
+        os.path.join(dirs['raw'], 'hydrography/gslb_stream.shp')
     )
     catchment_gdf = gwbase.load_hydrography_data(
-        os.path.join(dirs['raw'], 'hydrography/gslb_cat.shp')
+        os.path.join(dirs['raw'], 'hydrography/gsl_catchment.shp')
     )
     gage_df = gwbase.load_gage_info(
         os.path.join(dirs['raw'], 'streamflow/gsl_nwm_gage.csv')
     )
     wells_gdf, well_ts, well_info = gwbase.load_groundwater_data(
-        well_locations_path=os.path.join(dirs['raw'], 'groundwater/wells.csv'),
-        timeseries_path=os.path.join(dirs['raw'], 'groundwater/water_levels.csv')
+        well_locations_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_wells_with_aquifers.csv'),
+        timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_TS_with_aquifers.csv')
     )
     streamflow = gwbase.load_streamflow_data(
-        os.path.join(dirs['raw'], 'streamflow')
+        os.path.join(dirs['raw'], 'streamflow/GSLB_ML')
     )
     bfd_class = gwbase.load_baseflow_classification(
         os.path.join(dirs['raw'], 'bfd/bfd_classification.csv')
     )
     reach_elev = gwbase.load_reach_elevations(
-        os.path.join(dirs['processed'], 'reach_elevations.csv')
+        os.path.join(dirs['raw'], 'streamflow/reach_centroids_with_Elev.csv')
     )
 
     # Run workflow
@@ -437,7 +437,7 @@ def main():
     gage_stats, well_stats, mi_results = run_step_9_analysis(
         data_with_deltas, dirs['features'], dirs['figures']
     )
-    """
+
 
     print("\nWorkflow complete!")
 

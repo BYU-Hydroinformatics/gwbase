@@ -268,47 +268,107 @@ def load_streamflow_data(
     filepath: str,
     gage_id_col: str = 'gage_id',
     date_col: str = 'date',
-    q_col: str = 'q'
+    q_col: str = 'q',
+    filter_bfd: bool = True
 ) -> pd.DataFrame:
     """
-    Load daily streamflow data from CSV.
+    Load daily streamflow data from CSV file or directory of CSV files.
 
     Parameters
     ----------
     filepath : str
-        Path to CSV file containing streamflow data.
-        Expected columns: gage_id, date, q (discharge in cfs)
+        Path to CSV file or directory containing CSV files.
+        If directory, expects files named as gage_id.csv (e.g., '10011500.csv').
+        Expected columns: date, Q (or q), ML_BFD (if filtering by baseflow)
     gage_id_col : str, default 'gage_id'
-        Column name for gage identifier
+        Column name for gage identifier (only used for single file mode)
     date_col : str, default 'date'
         Column name for date
     q_col : str, default 'q'
         Column name for discharge
+    filter_bfd : bool, default True
+        If True and loading from directory, filter rows where ML_BFD == 1
+        (baseflow-dominated conditions). Ignored for single file mode.
 
     Returns
     -------
     pd.DataFrame
-        DataFrame with gage_id, date, q columns
+        DataFrame with gage_id, date, q columns (and bfd if from directory)
 
     Example
     -------
     >>> streamflow = load_streamflow_data('data/raw/streamflow/daily_discharge.csv')
+    >>> streamflow = load_streamflow_data('data/raw/streamflow/GSLB_ML')
     """
-    df = pd.read_csv(filepath)
+    # Check if filepath is a directory
+    if os.path.isdir(filepath):
+        # Load from directory (multiple CSV files)
+        compiled_data = pd.DataFrame(columns=['gage_id', 'date', 'q'])
+        
+        # Iterate over each file in the directory
+        for filename in os.listdir(filepath):
+            if filename.endswith('.csv'):
+                # Construct the full file path
+                file_path = os.path.join(filepath, filename)
+                
+                # Read the CSV file
+                df = pd.read_csv(file_path)
+                
+                # Filter rows where ML_BFD is 1 (if filter_bfd is True)
+                if filter_bfd and 'ML_BFD' in df.columns:
+                    df = df[df['ML_BFD'] == 1]
+                
+                # Extract gage_id from the filename (filename is the gage_id)
+                gage_id = os.path.splitext(filename)[0]
+                
+                # Add a new column for gage_id
+                df['gage_id'] = gage_id
+                
+                # Standardize column names
+                col_mapping = {}
+                for col in df.columns:
+                    col_lower = col.lower()
+                    if col_lower == date_col.lower():
+                        col_mapping[col] = 'date'
+                    elif col_lower in [q_col.lower(), 'q', 'discharge', 'flow']:
+                        col_mapping[col] = 'q'
+                    elif col_lower == 'ml_bfd':
+                        col_mapping[col] = 'bfd'
+                
+                df = df.rename(columns=col_mapping)
+                
+                # Select and rename necessary columns
+                if 'bfd' in df.columns:
+                    df = df[['gage_id', 'date', 'q', 'bfd']]
+                else:
+                    df = df[['gage_id', 'date', 'q']]
+                
+                # Append to the compiled DataFrame
+                compiled_data = pd.concat([compiled_data, df], ignore_index=True)
+        
+        df = compiled_data
+    else:
+        # Load from single file
+        df = pd.read_csv(filepath)
 
-    # Standardize column names
-    col_mapping = {}
-    for col in df.columns:
-        col_lower = col.lower()
-        if col_lower in [gage_id_col.lower(), 'site_no', 'station_id']:
-            col_mapping[col] = 'gage_id'
-        elif col_lower == date_col.lower():
-            col_mapping[col] = 'date'
-        elif col_lower in [q_col.lower(), 'discharge', 'flow']:
-            col_mapping[col] = 'q'
+        # Standardize column names
+        col_mapping = {}
+        for col in df.columns:
+            col_lower = col.lower()
+            if col_lower in [gage_id_col.lower(), 'site_no', 'station_id']:
+                col_mapping[col] = 'gage_id'
+            elif col_lower == date_col.lower():
+                col_mapping[col] = 'date'
+            elif col_lower in [q_col.lower(), 'discharge', 'flow']:
+                col_mapping[col] = 'q'
 
-    df = df.rename(columns=col_mapping)
-    df['date'] = pd.to_datetime(df['date'])
+        df = df.rename(columns=col_mapping)
+    
+    # Ensure date column exists and convert to datetime
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date'])
+    else:
+        raise ValueError(f"Date column not found. Available columns: {df.columns.tolist()}")
 
     print(f"Loaded streamflow data: {len(df):,} records")
     print(f"  Gages: {df['gage_id'].nunique()}")
