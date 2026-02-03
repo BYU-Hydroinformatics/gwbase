@@ -161,8 +161,16 @@ def compute_mi_analysis(
         filtered
         .groupby([well_id_col, gage_id_col])
         .apply(lambda x: calculate_well_metrics(x, delta_wte_col, delta_q_col, n_bins))
-        .reset_index()
     )
+    
+    # Reset index - handle case where gage_id might already be in index
+    if isinstance(results.index, pd.MultiIndex):
+        results = results.reset_index()
+    else:
+        results = results.reset_index()
+        # If gage_id is already a column, drop the duplicate
+        if 'gage_id' in results.columns and results.index.name == 'gage_id':
+            results = results.drop(columns=['gage_id'], errors='ignore')
 
     print(f"MI Analysis Results:")
     print(f"  Well-gage pairs analyzed: {len(results)}")
