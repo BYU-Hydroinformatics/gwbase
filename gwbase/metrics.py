@@ -204,9 +204,12 @@ def compute_regression_by_gage(
 
     print(f"Regression analysis by gage:")
     print(f"  Gages analyzed: {len(results_df)}")
-    print(f"  Mean R²: {results_df['r_squared'].mean():.4f}")
-    print(f"  Median R²: {results_df['r_squared'].median():.4f}")
-    print(f"  Significant (p<0.05): {(results_df['p_value'] < 0.05).sum()}")
+    if len(results_df) > 0:
+        print(f"  Mean R²: {results_df['r_squared'].mean():.4f}")
+        print(f"  Median R²: {results_df['r_squared'].median():.4f}")
+        print(f"  Significant (p<0.05): {(results_df['p_value'] < 0.05).sum()}")
+    else:
+        print("  No data available for regression analysis")
 
     return results_df
 
@@ -289,8 +292,12 @@ def compute_regression_by_well(
 
     print(f"Regression analysis by well:")
     print(f"  Wells analyzed: {len(results_df)}")
-    print(f"  Mean R²: {results_df['r_squared'].mean():.4f}")
-    print(f"  Median R²: {results_df['r_squared'].median():.4f}")
+    if len(results_df) > 0:
+        print(f"  Mean R²: {results_df['r_squared'].mean():.4f}")
+        print(f"  Median R²: {results_df['r_squared'].median():.4f}")
+        print(f"  Significant (p<0.05): {(results_df['p_value'] < 0.05).sum()}")
+    else:
+        print("  No data available for regression analysis")
 
     return results_df
 
@@ -367,20 +374,35 @@ def summarize_regression_results(
     -------
     >>> summary = summarize_regression_results(gage_stats, well_stats)
     """
-    summary = {
-        'n_gages': len(gage_stats),
-        'gage_r2_mean': gage_stats['r_squared'].mean(),
-        'gage_r2_median': gage_stats['r_squared'].median(),
-        'gage_r2_std': gage_stats['r_squared'].std(),
-        'gage_slope_mean': gage_stats['slope'].mean(),
-        'gage_slope_median': gage_stats['slope'].median(),
-        'gage_significant_count': (gage_stats['p_value'] < 0.05).sum(),
-        'gage_significant_pct': (gage_stats['p_value'] < 0.05).mean() * 100,
-        'gage_positive_slope_count': (gage_stats['slope'] > 0).sum(),
-        'gage_positive_slope_pct': (gage_stats['slope'] > 0).mean() * 100
-    }
+    summary = {}
+    if len(gage_stats) > 0 and 'r_squared' in gage_stats.columns:
+        summary = {
+            'n_gages': len(gage_stats),
+            'gage_r2_mean': gage_stats['r_squared'].mean(),
+            'gage_r2_median': gage_stats['r_squared'].median(),
+            'gage_r2_std': gage_stats['r_squared'].std(),
+            'gage_slope_mean': gage_stats['slope'].mean(),
+            'gage_slope_median': gage_stats['slope'].median(),
+            'gage_significant_count': (gage_stats['p_value'] < 0.05).sum(),
+            'gage_significant_pct': (gage_stats['p_value'] < 0.05).mean() * 100,
+            'gage_positive_slope_count': (gage_stats['slope'] > 0).sum(),
+            'gage_positive_slope_pct': (gage_stats['slope'] > 0).mean() * 100
+        }
+    else:
+        summary = {
+            'n_gages': 0,
+            'gage_r2_mean': None,
+            'gage_r2_median': None,
+            'gage_r2_std': None,
+            'gage_slope_mean': None,
+            'gage_slope_median': None,
+            'gage_significant_count': 0,
+            'gage_significant_pct': 0.0,
+            'gage_positive_slope_count': 0,
+            'gage_positive_slope_pct': 0.0
+        }
 
-    if well_stats is not None:
+    if well_stats is not None and len(well_stats) > 0 and 'r_squared' in well_stats.columns:
         summary.update({
             'n_wells': len(well_stats),
             'well_r2_mean': well_stats['r_squared'].mean(),
@@ -390,6 +412,17 @@ def summarize_regression_results(
             'well_slope_median': well_stats['slope'].median(),
             'well_significant_count': (well_stats['p_value'] < 0.05).sum(),
             'well_significant_pct': (well_stats['p_value'] < 0.05).mean() * 100
+        })
+    else:
+        summary.update({
+            'n_wells': 0,
+            'well_r2_mean': None,
+            'well_r2_median': None,
+            'well_r2_std': None,
+            'well_slope_mean': None,
+            'well_slope_median': None,
+            'well_significant_count': 0,
+            'well_significant_pct': 0.0
         })
 
     print("\nRegression Summary:")

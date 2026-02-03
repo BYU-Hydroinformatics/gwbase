@@ -32,11 +32,17 @@ import pandas as pd
 import gwbase
 
 
-def setup_directories(base_dir: str) -> dict:
+def setup_directories(base_dir: str, output_dir: str = None) -> dict:
     """Set up directory structure for GWBASE analysis."""
     from datetime import datetime
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = os.path.join(base_dir, 'reports', f'output_{timestamp}')
+    
+    if output_dir is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = os.path.join(base_dir, 'reports', f'output_{timestamp}')
+    else:
+        # Use provided output directory (can be relative or absolute)
+        if not os.path.isabs(output_dir):
+            output_dir = os.path.join(base_dir, output_dir)
     
     dirs = {
         'raw': os.path.join(base_dir, 'data', 'raw'),
@@ -211,7 +217,8 @@ def run_step_6_elevation_filtering(
     daily_data: pd.DataFrame,
     well_reach: pd.DataFrame,
     output_dir: str,
-    buffer_m: float = 30.0
+    buffer_m: float = 30.0,
+    wells_with_gages: pd.DataFrame = None
 ):
     """
     Step 6: Elevation-Based Filtering
@@ -227,6 +234,41 @@ def run_step_6_elevation_filtering(
     filtered_data, dist_stats = gwbase.filter_by_elevation(
         daily_data, well_reach, distance_buffer_meters=buffer_m
     )
+
+    # Add gage_id before saving (needed for Step 7)
+    if 'gage_id' not in filtered_data.columns:
+        print("\nAdding gage_id to filtered_data...")
+        # Primary source: well_reach (Downstream_Gage)
+        if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
+            well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
+                'Well_ID': 'well_id',
+                'Downstream_Gage': 'gage_id'
+            }).dropna(subset=['gage_id']).drop_duplicates()
+            filtered_data = pd.merge(
+                filtered_data,
+                well_reach_mapping,
+                on='well_id',
+                how='left'
+            )
+            print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from well_reach")
+        
+        # Secondary source: wells_with_gages (fill missing)
+        if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
+            gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
+            missing_mask = filtered_data['gage_id'].isna()
+            if missing_mask.any():
+                temp_merge = pd.merge(
+                    filtered_data[missing_mask][['well_id']],
+                    gage_mapping,
+                    on='well_id',
+                    how='left'
+                )
+                filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
+                print(f"  Filled {temp_merge['gage_id'].notna().sum():,} additional gage_ids from wells_with_gages")
+        
+        # Convert to string
+        filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
+        filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
 
     # Save results
     filtered_data.to_csv(os.path.join(output_dir, 'filtered_by_elevation.csv'), index=False)
@@ -365,6 +407,12 @@ def main():
         default=30.0,
         help='Elevation buffer in meters for Step 6 (default: 30)'
     )
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default=None,
+        help='Output directory path (if not specified, creates new timestamped directory)'
+    )
 
     args = parser.parse_args()
 
@@ -374,24 +422,37 @@ def main():
     print("="*60)
 
     # Setup directories
-    dirs = setup_directories(args.data_dir)
+    dirs = setup_directories(args.data_dir, args.output_dir)
 
     print(f"\nData directory: {args.data_dir}")
     print(f"Processing steps: {args.steps}")
 
-    # Note: This is a template. Users will need to:
-    # 1. Load their specific data files
-    # 2. Modify paths as needed
-    # 3. Run individual steps or the complete workflow
+    # Parse steps to run
+    start_step = 1
+    end_step = 9
+    if args.steps != 'all':
+        if '-' in args.steps:
+            # Range format: "1-5" or "6-9"
+            parts = args.steps.split('-')
+            start_step = int(parts[0])
+            end_step = int(parts[1]) if len(parts) > 1 else 9
+        elif ',' in args.steps:
+            # Comma-separated: "4,5,6"
+            steps_to_run = [int(s.strip()) for s in args.steps.split(',')]
+            start_step = min(steps_to_run)
+            end_step = max(steps_to_run)
+        else:
+            # Single step: "6"
+            start_step = int(args.steps)
+            end_step = int(args.steps)
+
+    print(f"Running steps {start_step} to {end_step}")
 
     print("\n" + "-"*60)
-    print("GWBASE workflow template ready.")
-    print("Load your data and call the appropriate step functions.")
+    print("GWBASE workflow ready.")
     print("-"*60)
 
-    # Example workflow (commented out - uncomment with actual data):
-
-    # Load data
+    # Load data (always needed)
     stream_gdf = gwbase.load_hydrography_data(
         os.path.join(dirs['raw'], 'hydrography/gslb_stream.shp')
     )
@@ -443,34 +504,186 @@ def main():
         os.path.join(dirs['raw'], 'streamflow/reach_centroids_with_Elev.csv')
     )
 
-    # Run workflow
-    G, matched_gages, terminal_gages, upstream_df = run_step_1_network_analysis(
-        stream_gdf, catchment_gdf, gage_df, dirs['processed']
-    )
+    # Run workflow with step selection
+    # Initialize variables for intermediate results
+    G, matched_gages, terminal_gages, upstream_df = None, None, None, None
+    wells_with_gages = None
+    well_reach = None
+    clean_data = None
+    daily_data = None
+    filtered_data = None
+    paired = None
+    data_with_deltas = None
 
-    wells_with_gages = run_step_2_locate_wells(
-        wells_gdf, catchment_gdf, upstream_df, dirs['processed']
-    )
+    # Step 1: Network Analysis
+    if start_step <= 1 <= end_step:
+        G, matched_gages, terminal_gages, upstream_df = run_step_1_network_analysis(
+            stream_gdf, catchment_gdf, gage_df, dirs['processed']
+        )
+    elif start_step > 1:
+        # Load previous results
+        print(f"\nLoading Step 1 results from previous run...")
+        upstream_df = pd.read_csv(os.path.join(dirs['processed'], 'terminal_gage_upstream_catchments.csv'))
+        terminal_gages = pd.read_csv(os.path.join(dirs['processed'], 'terminal_gages.csv'))
+        # Rebuild graph if needed for later steps
+        G = gwbase.build_stream_network_graph(stream_gdf)
+        matched_gages = gwbase.match_gages_to_catchments(gage_df, catchment_gdf)
 
-    well_reach = run_step_3_associate_reaches(
-        wells_gdf, stream_gdf, gage_df, reach_elev, dirs['processed']
-    )
+    # Step 2: Locate Wells
+    if start_step <= 2 <= end_step:
+        wells_with_gages = run_step_2_locate_wells(
+            wells_gdf, catchment_gdf, upstream_df, dirs['processed']
+        )
+    elif start_step > 2:
+        print(f"\nLoading Step 2 results from previous run...")
+        wells_with_gages = pd.read_csv(os.path.join(dirs['processed'], 'wells_in_catchments.csv'))
 
-    clean_data = run_step_4_preprocessing(well_ts, dirs['processed'])
+    # Step 3: Associate Reaches
+    if start_step <= 3 <= end_step:
+        well_reach = run_step_3_associate_reaches(
+            wells_gdf, stream_gdf, gage_df, reach_elev, dirs['processed']
+        )
+    elif start_step > 3:
+        print(f"\nLoading Step 3 results from previous run...")
+        well_reach = pd.read_csv(os.path.join(dirs['processed'], 'well_reach_relationships.csv'))
 
-    daily_data = run_step_5_interpolation(clean_data, well_info, dirs['processed'])
+    # Step 4: Preprocessing
+    if start_step <= 4 <= end_step:
+        clean_data = run_step_4_preprocessing(well_ts, dirs['processed'])
+    elif start_step > 4:
+        print(f"\nLoading Step 4 results from previous run...")
+        clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))
 
-    filtered_data = run_step_6_elevation_filtering(
-        daily_data, well_reach, dirs['processed'], args.buffer
-    )
+    # Step 5: Interpolation
+    if start_step <= 5 <= end_step:
+        daily_data = run_step_5_interpolation(clean_data, well_info, dirs['processed'])
+    elif start_step > 5:
+        print(f"\nLoading Step 5 results from previous run...")
+        daily_data = pd.read_csv(os.path.join(dirs['processed'], 'well_pchip_daily.csv'))
+        daily_data['date'] = pd.to_datetime(daily_data['date'])
 
-    paired = run_step_7_pairing(filtered_data, streamflow, None, dirs['processed'])
+    # Step 6: Elevation Filtering
+    if start_step <= 6 <= end_step:
+        filtered_data = run_step_6_elevation_filtering(
+            daily_data, well_reach, dirs['processed'], args.buffer, wells_with_gages
+        )
+    elif start_step > 6:
+        print(f"\nLoading Step 6 results from previous run...")
+        filtered_data = pd.read_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'))
+        filtered_data['date'] = pd.to_datetime(filtered_data['date'])
+        # Add gage_id if missing
+        if 'gage_id' not in filtered_data.columns or filtered_data['gage_id'].isna().all():
+            print("\nAdding gage_id to filtered_data...")
+            # Primary source: well_reach (Downstream_Gage) - has more coverage
+            if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
+                well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
+                    'Well_ID': 'well_id',
+                    'Downstream_Gage': 'gage_id'
+                }).dropna(subset=['gage_id']).drop_duplicates()
+                filtered_data = pd.merge(
+                    filtered_data,
+                    well_reach_mapping,
+                    on='well_id',
+                    how='left'
+                )
+                print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from well_reach (Downstream_Gage)")
+            
+            # Secondary source: wells_with_gages (fill missing)
+            if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
+                gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
+                # Only fill missing gage_ids
+                if 'gage_id' in filtered_data.columns:
+                    missing_mask = filtered_data['gage_id'].isna()
+                    if missing_mask.any():
+                        temp_merge = pd.merge(
+                            filtered_data[missing_mask][['well_id']],
+                            gage_mapping,
+                            on='well_id',
+                            how='left'
+                        )
+                        filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
+                        print(f"  Filled {filtered_data['gage_id'].notna().sum() - (missing_mask.sum() - temp_merge['gage_id'].notna().sum()):,} additional gage_ids from wells_with_gages")
+                else:
+                    filtered_data = pd.merge(
+                        filtered_data,
+                        gage_mapping,
+                        on='well_id',
+                        how='left'
+                    )
+                    print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from wells_with_gages")
+            
+            # Convert gage_id to string to match streamflow data type
+            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
+            filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
+            
+            # Re-save with gage_id
+            filtered_data.to_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'), index=False)
+    elif start_step > 6:
+        print(f"\nLoading Step 6 results from previous run...")
+        filtered_data = pd.read_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'))
+        filtered_data['date'] = pd.to_datetime(filtered_data['date'])
+        # Add gage_id if missing
+        if 'gage_id' not in filtered_data.columns:
+            print("Adding gage_id to filtered_data...")
+            if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
+                gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
+                filtered_data = pd.merge(
+                    filtered_data,
+                    gage_mapping,
+                    on='well_id',
+                    how='left'
+                )
+            if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
+                well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
+                    'Well_ID': 'well_id',
+                    'Downstream_Gage': 'gage_id_reach'
+                }).dropna(subset=['gage_id_reach']).drop_duplicates()
+                filtered_data = pd.merge(
+                    filtered_data,
+                    well_reach_mapping,
+                    on='well_id',
+                    how='left'
+                )
+                if 'gage_id' in filtered_data.columns:
+                    filtered_data['gage_id'] = filtered_data['gage_id'].fillna(filtered_data['gage_id_reach'])
+                else:
+                    filtered_data['gage_id'] = filtered_data['gage_id_reach']
+                filtered_data = filtered_data.drop('gage_id_reach', axis=1, errors='ignore')
+            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
+            filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
+    
+    # Ensure gage_id is string type in both filtered_data and streamflow for merging
+    if filtered_data is not None and 'gage_id' in filtered_data.columns:
+        # Convert float gage_id to string (remove .0 suffix)
+        filtered_data = filtered_data.copy()
+        filtered_data['gage_id'] = filtered_data['gage_id'].astype(str).str.replace('.0', '', regex=False)
+        filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
+    
+    if streamflow is not None and 'gage_id' in streamflow.columns:
+        streamflow = streamflow.copy()
+        streamflow['gage_id'] = streamflow['gage_id'].astype(str)
 
-    data_with_deltas = run_step_8_delta_metrics(paired, dirs['features'])
+    # Step 7: Pairing
+    if start_step <= 7 <= end_step:
+        paired = run_step_7_pairing(filtered_data, streamflow, None, dirs['processed'])
+    elif start_step > 7:
+        print(f"\nLoading Step 7 results from previous run...")
+        paired = pd.read_csv(os.path.join(dirs['processed'], 'paired_well_streamflow.csv'))
+        paired['date'] = pd.to_datetime(paired['date'])
 
-    gage_stats, well_stats, mi_results = run_step_9_analysis(
-        data_with_deltas, dirs['features'], dirs['figures']
-    )
+    # Step 8: Delta Metrics
+    if start_step <= 8 <= end_step:
+        data_with_deltas = run_step_8_delta_metrics(paired, dirs['features'])
+    elif start_step > 8:
+        print(f"\nLoading Step 8 results from previous run...")
+        data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
+        data_with_deltas['date'] = pd.to_datetime(data_with_deltas['date'])
+
+    # Step 9: Analysis
+    if start_step <= 9 <= end_step:
+        gage_stats, well_stats, mi_results = run_step_9_analysis(
+            data_with_deltas, dirs['features'], dirs['figures']
+        )
 
 
     print("\nWorkflow complete!")
