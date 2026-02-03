@@ -12,7 +12,7 @@ import pandas as pd
 def pair_wells_with_streamflow(
     well_data: pd.DataFrame,
     streamflow_data: pd.DataFrame,
-    bfd_classification: pd.DataFrame,
+    bfd_classification: pd.DataFrame = None,
     well_id_col: str = 'well_id',
     gage_id_col: str = 'gage_id',
     date_col: str = 'date'
@@ -25,9 +25,10 @@ def pair_wells_with_streamflow(
     well_data : pd.DataFrame
         Well time series with well_id, gage_id, date, wte columns
     streamflow_data : pd.DataFrame
-        Streamflow data with gage_id, date, q columns
-    bfd_classification : pd.DataFrame
-        BFD classification with gage_id, date, bfd columns
+        Streamflow data with gage_id, date, q columns (may also include 'bfd' column)
+    bfd_classification : pd.DataFrame, optional
+        BFD classification with gage_id, date, bfd columns.
+        If None and streamflow_data contains 'bfd' column, will use that instead.
     well_id_col : str, default 'well_id'
         Column name for well ID
     gage_id_col : str, default 'gage_id'
@@ -43,34 +44,50 @@ def pair_wells_with_streamflow(
     Example
     -------
     >>> paired = pair_wells_with_streamflow(well_data, streamflow, bfd_class)
+    >>> paired = pair_wells_with_streamflow(well_data, streamflow)  # if streamflow has 'bfd' column
     """
     # Ensure date columns are datetime
     well_data = well_data.copy()
     streamflow_data = streamflow_data.copy()
-    bfd_classification = bfd_classification.copy()
 
     well_data[date_col] = pd.to_datetime(well_data[date_col])
     streamflow_data[date_col] = pd.to_datetime(streamflow_data[date_col])
-    bfd_classification[date_col] = pd.to_datetime(bfd_classification[date_col])
+
+    # Check if streamflow_data already has 'bfd' column
+    streamflow_cols = [gage_id_col, date_col, 'q']
+    if 'bfd' in streamflow_data.columns:
+        streamflow_cols.append('bfd')
+        use_streamflow_bfd = True
+    else:
+        use_streamflow_bfd = False
 
     # Merge well data with streamflow
     paired = pd.merge(
         well_data,
-        streamflow_data[[gage_id_col, date_col, 'q']],
+        streamflow_data[streamflow_cols],
         on=[gage_id_col, date_col],
         how='inner'
     )
 
-    # Merge with BFD classification
-    paired = pd.merge(
-        paired,
-        bfd_classification[[gage_id_col, date_col, 'bfd']],
-        on=[gage_id_col, date_col],
-        how='left'
-    )
-
-    # Fill missing BFD values with 0 (non-BFD)
-    paired['bfd'] = paired['bfd'].fillna(0).astype(int)
+    # Handle BFD classification
+    if use_streamflow_bfd:
+        # BFD already in streamflow data, just ensure it's int
+        paired['bfd'] = paired['bfd'].fillna(0).astype(int)
+    elif bfd_classification is not None:
+        # Merge with separate BFD classification
+        bfd_classification = bfd_classification.copy()
+        bfd_classification[date_col] = pd.to_datetime(bfd_classification[date_col])
+        paired = pd.merge(
+            paired,
+            bfd_classification[[gage_id_col, date_col, 'bfd']],
+            on=[gage_id_col, date_col],
+            how='left'
+        )
+        # Fill missing BFD values with 0 (non-BFD)
+        paired['bfd'] = paired['bfd'].fillna(0).astype(int)
+    else:
+        # No BFD data available, set all to 0
+        paired['bfd'] = 0
 
     print(f"Paired data summary:")
     print(f"  Total records: {len(paired):,}")

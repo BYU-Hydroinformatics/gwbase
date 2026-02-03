@@ -234,14 +234,14 @@ def run_step_6_elevation_filtering(
 def run_step_7_pairing(
     well_data: pd.DataFrame,
     streamflow_data: pd.DataFrame,
-    bfd_classification: pd.DataFrame,
-    output_dir: str
+    bfd_classification: pd.DataFrame = None,
+    output_dir: str = None
 ):
     """
     Step 7: Pair Groundwater and Streamflow Records
 
     - Match well and streamflow by gage and date
-    - Add BFD classification
+    - Add BFD classification (from streamflow data if available, or from bfd_classification)
     - Calculate baseline values
     """
     print("\n" + "="*60)
@@ -402,9 +402,10 @@ def main():
     streamflow = gwbase.load_streamflow_data(
         os.path.join(dirs['raw'], 'streamflow/GSLB_ML')
     )
-    bfd_class = gwbase.load_baseflow_classification(
-        os.path.join(dirs['raw'], 'bfd/bfd_classification.csv')
-    )
+    # Note: bfd_classification is optional - streamflow data already contains 'bfd' column
+    # bfd_class = gwbase.load_baseflow_classification(
+    #     os.path.join(dirs['raw'], 'bfd/bfd_classification.csv')
+    # )
     reach_elev = gwbase.load_reach_elevations(
         os.path.join(dirs['raw'], 'streamflow/reach_centroids_with_Elev.csv')
     )
@@ -430,7 +431,7 @@ def main():
         daily_data, well_reach, dirs['processed'], args.buffer
     )
 
-    paired = run_step_7_pairing(filtered_data, streamflow, bfd_class, dirs['processed'])
+    paired = run_step_7_pairing(filtered_data, streamflow, None, dirs['processed'])
 
     data_with_deltas = run_step_8_delta_metrics(paired, dirs['features'])
 
