@@ -53,6 +53,20 @@ def filter_by_elevation(
     >>> print(f"Retained {len(filtered):,} records")
     """
     filtered_data = filtered_data.copy()
+    well_reach_df = well_reach_df.copy()
+
+    # Standardize column names in well_reach_df
+    # Handle both Well_ID/well_id and Reach_Elevation/reach_elev_m variations
+    col_mapping = {}
+    for col in well_reach_df.columns:
+        col_lower = col.lower()
+        if col_lower in ['well_id', 'wellid']:
+            col_mapping[col] = 'well_id'
+        elif col_lower in ['reach_elevation', 'reach_elev_m', 'reach_elev']:
+            col_mapping[col] = 'reach_elev_m'
+    
+    if col_mapping:
+        well_reach_df = well_reach_df.rename(columns=col_mapping)
 
     # Convert WTE from feet to meters
     filtered_data['wte_meters'] = filtered_data['wte'] * wte_feet_to_meters
