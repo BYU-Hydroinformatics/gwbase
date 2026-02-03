@@ -34,15 +34,21 @@ import gwbase
 
 def setup_directories(base_dir: str) -> dict:
     """Set up directory structure for GWBASE analysis."""
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join(base_dir, 'reports', f'output_{timestamp}')
+    
     dirs = {
         'raw': os.path.join(base_dir, 'data', 'raw'),
-        'processed': os.path.join(base_dir, 'data', 'processed'),
-        'features': os.path.join(base_dir, 'data', 'features'),
-        'figures': os.path.join(base_dir, 'reports', 'figures'),
+        'processed': os.path.join(output_dir, 'processed'),
+        'features': os.path.join(output_dir, 'features'),
+        'figures': os.path.join(output_dir, 'figures'),
     }
 
     for dir_path in dirs.values():
         os.makedirs(dir_path, exist_ok=True)
+    
+    print(f"Output directory: {output_dir}")
 
     return dirs
 
@@ -395,6 +401,33 @@ def main():
     gage_df = gwbase.load_gage_info(
         os.path.join(dirs['raw'], 'streamflow/gsl_nwm_gage.csv')
     )
+    # Load gsl_nwm.csv to get COMID_v2 information for reach matching
+    try:
+        gsl_nwm_df = pd.read_csv(os.path.join(dirs['raw'], 'streamflow/gsl_nwm.csv'))
+        # Merge COMID_v2 from gsl_nwm.csv to gage_df
+        if 'COMID_v2' in gsl_nwm_df.columns and 'id' in gage_df.columns:
+            # Match by samplingFeatureCode (which contains the gage ID as string)
+            if 'samplingFeatureCode' in gsl_nwm_df.columns:
+                # Create a temporary column in gage_df for matching
+                gage_df_temp = gage_df.copy()
+                gage_df_temp['id_str'] = gage_df_temp['id'].astype(str)
+                gsl_nwm_df_temp = gsl_nwm_df[['samplingFeatureCode', 'COMID_v2']].copy()
+                gsl_nwm_df_temp['samplingFeatureCode_str'] = gsl_nwm_df_temp['samplingFeatureCode'].astype(str)
+                # Merge
+                gage_df = pd.merge(
+                    gage_df_temp,
+                    gsl_nwm_df_temp[['samplingFeatureCode_str', 'COMID_v2']],
+                    left_on='id_str',
+                    right_on='samplingFeatureCode_str',
+                    how='left'
+                )
+                # Drop temporary columns
+                gage_df = gage_df.drop(['id_str', 'samplingFeatureCode_str'], axis=1, errors='ignore')
+            print(f"Merged COMID_v2 information: {gage_df['COMID_v2'].notna().sum()} gages have COMID_v2")
+    except Exception as e:
+        print(f"Warning: Could not load COMID_v2 from gsl_nwm.csv: {e}")
+        print("Continuing without COMID_v2 (downstream gage finding may be limited)")
+    
     wells_gdf, well_ts, well_info = gwbase.load_groundwater_data(
         well_locations_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_wells_with_aquifers.csv'),
         timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_TS_with_aquifers.csv')

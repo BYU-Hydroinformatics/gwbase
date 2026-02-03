@@ -317,14 +317,15 @@ def find_downstream_gage(
             break
         visited_reaches.add(current_reach)
 
-        # Check for gage on current reach
-        gage_on_reach = gages_df[gages_df['COMID_v2'] == current_reach]
-        if not gage_on_reach.empty:
-            # Return the gage ID (using samplingFeatureCode if available)
-            if 'samplingFeatureCode' in gage_on_reach.columns:
-                return gage_on_reach.iloc[0]['samplingFeatureCode']
-            elif 'id' in gage_on_reach.columns:
-                return gage_on_reach.iloc[0]['id']
+        # Check for gage on current reach (if COMID_v2 column exists)
+        if 'COMID_v2' in gages_df.columns:
+            gage_on_reach = gages_df[gages_df['COMID_v2'] == current_reach]
+            if not gage_on_reach.empty:
+                # Return the gage ID (using samplingFeatureCode if available)
+                if 'samplingFeatureCode' in gage_on_reach.columns:
+                    return gage_on_reach.iloc[0]['samplingFeatureCode']
+                elif 'id' in gage_on_reach.columns:
+                    return gage_on_reach.iloc[0]['id']
 
         # Move downstream
         reach_row = stream_gdf[stream_gdf['LINKNO'] == current_reach]
