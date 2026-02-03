@@ -180,8 +180,13 @@ def associate_wells_with_reaches(
             gages_df
         )
 
+        # Get well_id from the row (itertuples uses column name as attribute)
+        # Column name is 'well_id' (lowercase) after standardization in load_well_locations
+        # Use getattr to handle both well_id and Well_ID cases
+        well_id = getattr(well, 'well_id', getattr(well, 'Well_ID', None))
+        
         results.append({
-            'Well_ID': well.Well_ID,
+            'Well_ID': well_id,
             'Reach_ID': reach_id,
             'Reach_Elevation': reach_elevation,
             'Distance_to_Reach': min_distance,
