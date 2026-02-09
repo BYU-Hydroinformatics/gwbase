@@ -87,6 +87,7 @@ from .metrics import (
     compute_regression_by_gage,
     compute_regression_by_well,
     filter_by_correlation,
+    filter_pairs_by_r_squared,
     summarize_regression_results,
 )
 
@@ -105,6 +106,9 @@ from .analysis import (
 from .visualization import (
     plot_well_timeseries,
     plot_delta_scatter,
+    plot_filtered_pairs_scatter,
+    plot_filtered_pairs_by_gage,
+    plot_pairs_by_r2_category,
     plot_mi_comparison,
     plot_regression_summary,
     plot_elevation_filter_sensitivity,

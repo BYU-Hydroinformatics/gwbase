@@ -351,6 +351,70 @@ def filter_by_correlation(
     return filtered
 
 
+def filter_pairs_by_r_squared(
+    data: pd.DataFrame,
+    well_stats: pd.DataFrame,
+    r_squared_threshold: float = 0.1,
+    well_id_col: str = 'well_id',
+    gage_id_col: str = 'gage_id'
+) -> pd.DataFrame:
+    """
+    Filter data to only well-gage pairs with R² above threshold.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Full paired data with delta_wte and delta_q
+    well_stats : pd.DataFrame
+        Regression statistics per well-gage pair (from compute_regression_by_well)
+    r_squared_threshold : float, default 0.1
+        Minimum R² value to keep
+    well_id_col : str, default 'well_id'
+        Column name for well ID
+    gage_id_col : str, default 'gage_id'
+        Column name for gage ID
+
+    Returns
+    -------
+    pd.DataFrame
+        Data filtered to pairs with R² > threshold
+
+    Example
+    -------
+    >>> filtered_data = filter_pairs_by_r_squared(data, well_stats, r_squared_threshold=0.1)
+    """
+    # Filter well_stats to pairs above threshold
+    high_r2_pairs = well_stats[well_stats['r_squared'] > r_squared_threshold].copy()
+    
+    # Create a composite key for merging
+    high_r2_pairs['pair_key'] = (
+        high_r2_pairs[well_id_col].astype(str) + '_' + 
+        high_r2_pairs[gage_id_col].astype(str)
+    )
+    
+    # Create same key in data
+    data = data.copy()
+    data['pair_key'] = (
+        data[well_id_col].astype(str) + '_' + 
+        data[gage_id_col].astype(str)
+    )
+    
+    # Filter data to only high R² pairs
+    filtered = data[data['pair_key'].isin(high_r2_pairs['pair_key'])].copy()
+    
+    # Drop temporary key column
+    filtered = filtered.drop(columns=['pair_key'], errors='ignore')
+    
+    print(f"R² filter (threshold: {r_squared_threshold}):")
+    print(f"  Total pairs analyzed: {len(well_stats)}")
+    print(f"  Pairs with R² > {r_squared_threshold}: {len(high_r2_pairs)}")
+    print(f"  Records retained: {len(filtered):,}")
+    print(f"  Mean R² of filtered pairs: {high_r2_pairs['r_squared'].mean():.4f}")
+    print(f"  Median R² of filtered pairs: {high_r2_pairs['r_squared'].median():.4f}")
+    
+    return filtered
+
+
 def summarize_regression_results(
     gage_stats: pd.DataFrame,
     well_stats: pd.DataFrame = None
