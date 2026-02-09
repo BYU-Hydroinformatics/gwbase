@@ -281,22 +281,22 @@ def run_step_5_interpolation(
     """
     Step 5: Temporal Interpolation of Groundwater Levels
 
-    - PCHIP interpolation to daily resolution
+    - PCHIP interpolation to **monthly** resolution (middle of each month)
     - Merge with well location info
     """
     print("\n" + "="*60)
     print("STEP 5: PCHIP Interpolation")
     print("="*60)
 
-    # Interpolate
-    daily_data = gwbase.interpolate_with_well_info(clean_data, well_info)
+    # Interpolate (now monthly, middle-of-month values)
+    monthly_data = gwbase.interpolate_with_well_info(clean_data, well_info)
 
     # Save results
-    daily_data.to_csv(os.path.join(output_dir, 'well_pchip_daily.csv'), index=False)
+    monthly_data.to_csv(os.path.join(output_dir, 'well_pchip_monthly.csv'), index=False)
 
-    print(f"\nStep 5 complete. Generated {len(daily_data):,} daily records.")
+    print(f"\nStep 5 complete. Generated {len(monthly_data):,} monthly records.")
 
-    return daily_data
+    return monthly_data
 
 
 def run_step_6_elevation_filtering(
@@ -619,7 +619,7 @@ def main():
         daily_data = run_step_5_interpolation(clean_data, well_info, dirs['processed'])
     elif start_step > 5:
         print(f"\nLoading Step 5 results from previous run...")
-        daily_data = pd.read_csv(os.path.join(dirs['processed'], 'well_pchip_daily.csv'))
+        daily_data = pd.read_csv(os.path.join(dirs['processed'], 'well_pchip_monthly.csv'))
         daily_data['date'] = pd.to_datetime(daily_data['date'])
 
     # Step 6: Elevation Filtering

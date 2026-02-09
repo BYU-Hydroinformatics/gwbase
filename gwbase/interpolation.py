@@ -3,7 +3,7 @@ Time series interpolation functions for GWBASE.
 
 This module implements Step 5 of the GWBASE workflow:
 - PCHIP (Piecewise Cubic Hermite Interpolating Polynomial) interpolation
-  of groundwater levels to daily resolution
+  of groundwater levels to **monthly** resolution (values at the middle of each month)
 """
 
 import pandas as pd
@@ -19,7 +19,8 @@ def interpolate_daily_pchip(
     value_col: str = 'wte'
 ) -> pd.DataFrame:
     """
-    Perform daily PCHIP interpolation on groundwater well time series data.
+    Perform **monthly** PCHIP interpolation on groundwater well time series data,
+    evaluating at the **middle of each month**.
 
     PCHIP interpolation preserves monotonic patterns between observations and
     avoids unrealistic oscillations that can occur with traditional spline
@@ -42,9 +43,9 @@ def interpolate_daily_pchip(
     Returns
     -------
     pd.DataFrame
-        DataFrame with daily interpolated values for each well:
+        DataFrame with **monthly** interpolated values for each well:
         - well_id: Well identifier
-        - date: Daily date
+        - date: Middle-of-month date
         - wte: Interpolated water table elevation
 
     Notes
@@ -55,8 +56,8 @@ def interpolate_daily_pchip(
 
     Example
     -------
-    >>> daily_wte = interpolate_daily_pchip(well_data)
-    >>> daily_wte.to_csv('data/processed/well_pchip.csv', index=False)
+    >>> monthly_wte = interpolate_daily_pchip(well_data)
+    >>> monthly_wte.to_csv('data/processed/well_pchip_monthly.csv', index=False)
     """
     well_ts = well_ts.copy()
     well_ts[date_col] = pd.to_datetime(well_ts[date_col])
@@ -78,8 +79,13 @@ def interpolate_daily_pchip(
         start_date = group[date_col].min()
         end_date = group[date_col].max()
 
-        # Generate daily date sequence
-        full_dates = pd.date_range(start=start_date, end=end_date, freq='D')
+        # Generate monthly date sequence at middle of each month
+        # Determine the first and last month covered by the observations
+        first_month_start = start_date.to_period('M').to_timestamp()
+        last_month_start = end_date.to_period('M').to_timestamp()
+        month_starts = pd.date_range(start=first_month_start, end=last_month_start, freq='MS')
+        # Middle of month is approximated as 15th (or 14 days after month start)
+        full_dates = month_starts + pd.offsets.Day(14)
 
         # Convert dates to ordinal numbers for interpolation
         x_obs = group[date_col].map(pd.Timestamp.toordinal)
@@ -113,7 +119,7 @@ def interpolate_daily_pchip(
     print(f"\nPCHIP Interpolation Summary:")
     print(f"  Wells processed: {wells_processed}")
     print(f"  Wells skipped (< 2 observations): {wells_skipped}")
-    print(f"  Total daily records generated: {len(interpolated_df):,}")
+    print(f"  Total monthly records generated: {len(interpolated_df):,}")
 
     return interpolated_df
 
