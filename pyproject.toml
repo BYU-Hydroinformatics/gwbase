@@ -60,6 +60,7 @@ full = [
 
 [project.scripts]
 gwbase = "gwbase.cli:main"
+gwbase-well-summary = "gwbase.well_summary:main_cli"
 
 [tool.setuptools]
 packages = ["gwbase"]
