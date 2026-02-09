@@ -242,6 +242,83 @@ def apply_date_range_filter(
     return data
 
 
+def aggregate_streamflow_monthly_bfd(
+    streamflow_data: pd.DataFrame,
+    gage_id_col: str = 'gage_id',
+    date_col: str = 'date',
+    q_col: str = 'q',
+    bfd_col: str = 'bfd'
+) -> pd.DataFrame:
+    """
+    Aggregate streamflow data to monthly intervals, computing average flow
+    for bfd=1 periods only, with dates set to middle of each month.
+
+    Parameters
+    ----------
+    streamflow_data : pd.DataFrame
+        Streamflow data with gage_id, date, q, bfd columns
+    gage_id_col : str, default 'gage_id'
+        Column name for gage ID
+    date_col : str, default 'date'
+        Column name for date
+    q_col : str, default 'q'
+        Column name for streamflow
+    bfd_col : str, default 'bfd'
+        Column name for BFD indicator
+
+    Returns
+    -------
+    pd.DataFrame
+        Monthly aggregated data with:
+        - gage_id: Gage identifier
+        - date: Middle of month (15th day)
+        - q: Average flow for bfd=1 periods in that month
+        - bfd: Set to 1 (since only bfd=1 data is used)
+
+    Example
+    -------
+    >>> monthly_streamflow = aggregate_streamflow_monthly_bfd(streamflow_data)
+    """
+    data = streamflow_data.copy()
+    data[date_col] = pd.to_datetime(data[date_col])
+    
+    # Filter to only bfd=1 records
+    bfd_data = data[data[bfd_col] == 1].copy()
+    
+    if len(bfd_data) == 0:
+        print("Warning: No bfd=1 records found in streamflow data")
+        return pd.DataFrame(columns=[gage_id_col, date_col, q_col, bfd_col])
+    
+    # Create year-month grouping
+    bfd_data['year'] = bfd_data[date_col].dt.year
+    bfd_data['month'] = bfd_data[date_col].dt.month
+    
+    # Group by gage_id, year, and month, then compute mean of q
+    monthly_agg = bfd_data.groupby([gage_id_col, 'year', 'month']).agg({
+        q_col: 'mean'
+    }).reset_index()
+    
+    # Create date column set to middle of month (15th day)
+    monthly_agg[date_col] = pd.to_datetime(
+        monthly_agg[['year', 'month']].assign(day=15)
+    )
+    
+    # Set bfd to 1 (since we only aggregated bfd=1 data)
+    monthly_agg[bfd_col] = 1
+    
+    # Select and reorder columns
+    result = monthly_agg[[gage_id_col, date_col, q_col, bfd_col]].copy()
+    result = result.sort_values([gage_id_col, date_col])
+    
+    print(f"Monthly BFD aggregation:")
+    print(f"  Input records (bfd=1): {len(bfd_data):,}")
+    print(f"  Monthly aggregated records: {len(result):,}")
+    print(f"  Unique gages: {result[gage_id_col].nunique()}")
+    print(f"  Date range: {result[date_col].min()} to {result[date_col].max()}")
+    
+    return result
+
+
 def get_well_gage_summary(
     paired_data: pd.DataFrame,
     well_id_col: str = 'well_id',

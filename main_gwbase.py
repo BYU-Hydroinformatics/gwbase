@@ -348,6 +348,7 @@ def run_step_7_pairing(
     """
     Step 7: Pair Groundwater and Streamflow Records
 
+    - Aggregate streamflow to monthly intervals (average of bfd=1 flows)
     - Match well and streamflow by gage and date
     - Add BFD classification (from streamflow data if available, or from bfd_classification)
     - Calculate baseline values
@@ -356,9 +357,20 @@ def run_step_7_pairing(
     print("STEP 7: Well-Streamflow Pairing")
     print("="*60)
 
-    # Pair data
+    # Aggregate streamflow to monthly intervals (average of bfd=1 flows)
+    print("\nAggregating streamflow to monthly intervals (bfd=1 average)...")
+    streamflow_monthly = gwbase.aggregate_streamflow_monthly_bfd(streamflow_data)
+    
+    # Save aggregated streamflow
+    if output_dir:
+        streamflow_monthly.to_csv(
+            os.path.join(output_dir, 'streamflow_monthly_bfd.csv'),
+            index=False
+        )
+
+    # Pair data with monthly aggregated streamflow
     paired = gwbase.pair_wells_with_streamflow(
-        well_data, streamflow_data, bfd_classification
+        well_data, streamflow_monthly, bfd_classification
     )
 
     # Calculate baseline values
@@ -553,8 +565,10 @@ def main():
         well_locations_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_wells_with_aquifers.csv'),
         timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_TS_with_aquifers.csv')
     )
+    # Load streamflow data with all records (including bfd=0) for monthly aggregation
     streamflow = gwbase.load_streamflow_data(
-        os.path.join(dirs['raw'], 'streamflow/GSLB_ML')
+        os.path.join(dirs['raw'], 'streamflow/GSLB_ML'),
+        filter_bfd=False  # Keep all records for monthly bfd=1 aggregation
     )
     # Note: bfd_classification is optional - streamflow data already contains 'bfd' column
     # bfd_class = gwbase.load_baseflow_classification(

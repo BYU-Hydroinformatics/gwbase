@@ -78,6 +78,7 @@ from .pairing import (
     calculate_baseline_values,
     apply_date_range_filter,
     get_well_gage_summary,
+    aggregate_streamflow_monthly_bfd,
 )
 
 # Steps 8-9: Delta metrics and regression
