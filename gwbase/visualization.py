@@ -43,6 +43,37 @@ def format_p_value(p_value: float) -> str:
         return f"{p_value:.2f}"
 
 
+def _compute_and_plot_regression(x, y, linewidth=2.5, label=None, zorder=10):
+    """
+    Compute regression and plot regression line.
+    
+    Returns
+    -------
+    tuple: (slope, intercept, r_squared, p_value, std_err)
+    """
+    if len(x) > 1 and np.std(x) > 0 and np.std(y) > 0:
+        slope, intercept, r_value, p_value, std_err = linregress(x, y)
+        r_squared = r_value ** 2
+        
+        # Plot regression line
+        x_range = np.array([x.min(), x.max()])
+        y_range = intercept + slope * x_range
+        if label is None:
+            label = f'Regression (R²={r_squared:.3f})'
+        plt.plot(x_range, y_range, 'r-', linewidth=linewidth, label=label, zorder=zorder)
+        return slope, intercept, r_squared, p_value, std_err, r_value
+    else:
+        return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
+
+
+def _add_stats_text(stats_text, x_pos=0.02, y_pos=0.98, fontsize=11, alpha=0.9):
+    """Add statistics text box to plot."""
+    plt.text(x_pos, y_pos, stats_text,
+            transform=plt.gca().transAxes,
+            fontsize=fontsize, ha='left', va='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=alpha))
+
+
 def plot_well_timeseries(
     data: pd.DataFrame,
     output_dir: str = 'figures/well_timeseries',
@@ -242,7 +273,7 @@ def plot_filtered_pairs_scatter(
             linewidth=0.5
         )
 
-        # Regression line
+        # Regression line (use stats from well_stats, not recompute)
         x_range = np.array([
             group[delta_wte_col].min(),
             group[delta_wte_col].max()
@@ -259,11 +290,7 @@ def plot_filtered_pairs_scatter(
             f"R²: {r_squared:.2f}\n"
             f"p-value: {format_p_value(p_value)}"
         )
-
-        plt.text(0.02, 0.98, legend_text,
-                transform=plt.gca().transAxes,
-                fontsize=11, ha='left', va='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        _add_stats_text(legend_text, alpha=0.8)
 
         plt.xlabel('ΔWTE (ft)', fontsize=12)
         plt.ylabel('ΔQ (cfs)', fontsize=12)
@@ -419,18 +446,9 @@ def plot_pairs_by_r2_category(
             # Compute overall regression for this category
             x = category_data[delta_wte_col].values
             y = category_data[delta_q_col].values
-
-            if len(x) > 1 and np.std(x) > 0 and np.std(y) > 0:
-                slope, intercept, r_value, p_value, std_err = linregress(x, y)
-                r_squared = r_value ** 2
-
-                # Plot overall regression line
-                x_range = np.array([x.min(), x.max()])
-                y_range = intercept + slope * x_range
-                plt.plot(x_range, y_range, 'r-', linewidth=2.5,
-                        label=f'Overall regression (R²={r_squared:.3f})', zorder=10)
-            else:
-                slope = intercept = r_squared = p_value = std_err = np.nan
+            slope, intercept, r_squared, p_value, std_err, r_value = _compute_and_plot_regression(
+                x, y, label=f'Overall regression (R²={r_squared:.3f})' if not np.isnan(r_squared) else None
+            )
 
             # Add statistics text
             stats_text = (
@@ -442,11 +460,7 @@ def plot_pairs_by_r2_category(
                 f"Overall R²: {r_squared:.2f}\n"
                 f"p-value: {format_p_value(p_value)}"
             )
-
-            plt.text(0.02, 0.98, stats_text,
-                    transform=plt.gca().transAxes,
-                    fontsize=11, ha='left', va='top',
-                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.9))
+            _add_stats_text(stats_text)
 
             plt.xlabel('ΔWTE (ft)', fontsize=12)
             plt.ylabel('ΔQ (cfs)', fontsize=12)
@@ -567,13 +581,11 @@ def plot_delta_scatter(
 
         # Regression analysis
         if len(group[delta_wte_col].unique()) > 1:
-            slope, intercept, r_value, p_value, std_err = linregress(
-                group[delta_wte_col], group[delta_q_col]
+            x = group[delta_wte_col].values
+            y = group[delta_q_col].values
+            slope, intercept, r_squared, p_value, std_err, r_value = _compute_and_plot_regression(
+                x, y, linewidth=2, label=None, zorder=5
             )
-
-            x_range = [group[delta_wte_col].min(), group[delta_wte_col].max()]
-            y_range = [intercept + slope * x for x in x_range]
-            plt.plot(x_range, y_range, 'r-', linewidth=2)
 
             class_value = None
             if class_col and class_col in group.columns:
@@ -585,7 +597,7 @@ def plot_delta_scatter(
                 'n_observations': len(group),
                 'slope': slope,
                 'intercept': intercept,
-                'r_squared': r_value ** 2,
+                'r_squared': r_squared,
                 'p_value': p_value,
                 'class': class_value
             })
@@ -709,18 +721,9 @@ def plot_filtered_pairs_by_gage(
         # Compute overall regression for the gage (all wells combined)
         x = gage_data[delta_wte_col].values
         y = gage_data[delta_q_col].values
-
-        if len(x) > 1 and np.std(x) > 0 and np.std(y) > 0:
-            slope, intercept, r_value, p_value, std_err = linregress(x, y)
-            r_squared = r_value ** 2
-
-            # Plot overall regression line
-            x_range = np.array([x.min(), x.max()])
-            y_range = intercept + slope * x_range
-            plt.plot(x_range, y_range, 'r-', linewidth=2.5, 
-                    label=f'Overall regression (R²={r_squared:.3f})', zorder=10)
-        else:
-            slope = intercept = r_squared = p_value = std_err = np.nan
+        slope, intercept, r_squared, p_value, std_err, r_value = _compute_and_plot_regression(
+            x, y, label=f'Overall regression (R²={r_squared:.3f})' if not np.isnan(r_squared) else None
+        )
 
         # Add statistics text
         stats_text = (
@@ -731,11 +734,7 @@ def plot_filtered_pairs_by_gage(
             f"Overall R²: {r_squared:.2f}\n"
             f"p-value: {format_p_value(p_value)}"
         )
-
-        plt.text(0.02, 0.98, stats_text,
-                transform=plt.gca().transAxes,
-                fontsize=11, ha='left', va='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.9))
+        _add_stats_text(stats_text)
 
         plt.xlabel('ΔWTE (ft)', fontsize=12)
         plt.ylabel('ΔQ (cfs)', fontsize=12)

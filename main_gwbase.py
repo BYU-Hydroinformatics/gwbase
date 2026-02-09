@@ -59,6 +59,92 @@ def setup_directories(base_dir: str, output_dir: str = None) -> dict:
     return dirs
 
 
+def add_gage_id_to_filtered_data(
+    filtered_data: pd.DataFrame,
+    wells_with_gages: pd.DataFrame = None,
+    well_reach: pd.DataFrame = None,
+    terminal_gages: pd.DataFrame = None
+) -> pd.DataFrame:
+    """
+    Add gage_id to filtered_data from available sources.
+    
+    Priority:
+    1. wells_with_gages (all are terminal gages)
+    2. well_reach (Downstream_Gage, filtered to terminal gages only)
+    """
+    if 'gage_id' in filtered_data.columns and filtered_data['gage_id'].notna().any():
+        return filtered_data
+    
+    print("\nAdding gage_id to filtered_data...")
+    
+    # Get terminal gage IDs for filtering
+    terminal_gage_ids = None
+    if terminal_gages is not None and 'id' in terminal_gages.columns:
+        terminal_gage_ids = set(terminal_gages['id'].astype(float).unique())
+    
+    # Primary source: wells_with_gages (all are terminal gages)
+    if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
+        gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
+        gage_mapping['gage_id'] = gage_mapping['gage_id'].astype(str).str.replace('.0', '', regex=False)
+        filtered_data = pd.merge(filtered_data, gage_mapping, on='well_id', how='left')
+        print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from wells_with_gages")
+    
+    # Secondary source: well_reach (Downstream_Gage) - but only terminal gages
+    if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
+        well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
+            'Well_ID': 'well_id',
+            'Downstream_Gage': 'gage_id_reach'
+        }).dropna(subset=['gage_id_reach']).drop_duplicates()
+        
+        # Filter to only terminal gages if available
+        if terminal_gage_ids is not None:
+            well_reach_mapping = well_reach_mapping[
+                well_reach_mapping['gage_id_reach'].isin(terminal_gage_ids)
+            ]
+        
+        # Fill missing gage_ids
+        missing_mask = filtered_data['gage_id'].isna()
+        if missing_mask.any() and len(well_reach_mapping) > 0:
+            temp_merge = pd.merge(
+                filtered_data[missing_mask][['well_id']],
+                well_reach_mapping[['well_id', 'gage_id_reach']].rename(columns={'gage_id_reach': 'gage_id'}),
+                on='well_id',
+                how='left'
+            )
+            filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
+            print(f"  Filled {temp_merge['gage_id'].notna().sum():,} additional gage_ids from well_reach")
+    
+    return filtered_data
+
+
+def normalize_and_filter_gage_ids(
+    data: pd.DataFrame,
+    terminal_gages: pd.DataFrame = None,
+    data_name: str = "data"
+) -> pd.DataFrame:
+    """
+    Normalize gage_id format (convert to string, remove .0 suffix) and filter to terminal gages.
+    """
+    if 'gage_id' not in data.columns:
+        return data
+    
+    # Normalize gage_id format
+    data = data.copy()
+    data['gage_id'] = data['gage_id'].astype(str).str.replace('.0', '', regex=False)
+    data['gage_id'] = data['gage_id'].replace('nan', pd.NA)
+    
+    # Filter to only terminal gages if available
+    if terminal_gages is not None and 'id' in terminal_gages.columns:
+        terminal_gage_ids = set(terminal_gages['id'].astype(str).unique())
+        before_count = len(data)
+        data = data[data['gage_id'].isin(terminal_gage_ids)]
+        after_count = len(data)
+        if before_count > 0:
+            print(f"Filtered {data_name} to terminal gages: {before_count:,} -> {after_count:,} records ({after_count/before_count*100:.1f}% retained)")
+    
+    return data
+
+
 def run_step_1_network_analysis(
     stream_gdf,
     catchment_gdf,
@@ -236,67 +322,13 @@ def run_step_6_elevation_filtering(
         daily_data, well_reach, distance_buffer_meters=buffer_m
     )
 
-    # Add gage_id before saving (needed for Step 7)
-    if 'gage_id' not in filtered_data.columns:
-        print("\nAdding gage_id to filtered_data...")
-        
-        # Get terminal gage IDs for filtering
-        terminal_gage_ids = None
-        if terminal_gages is not None and 'id' in terminal_gages.columns:
-            terminal_gage_ids = set(terminal_gages['id'].astype(float).unique())
-        
-        # Primary source: wells_with_gages (all are terminal gages)
-        if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
-            gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
-            # Convert gage_id to string and remove .0 suffix
-            gage_mapping['gage_id'] = gage_mapping['gage_id'].astype(str).str.replace('.0', '', regex=False)
-            filtered_data = pd.merge(
-                filtered_data,
-                gage_mapping,
-                on='well_id',
-                how='left'
-            )
-            print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from wells_with_gages (all terminal)")
-        
-        # Secondary source: well_reach (Downstream_Gage) - but only terminal gages
-        if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
-            well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
-                'Well_ID': 'well_id',
-                'Downstream_Gage': 'gage_id_reach'
-            }).dropna(subset=['gage_id_reach']).drop_duplicates()
-            
-            # Filter to only terminal gages if available
-            if terminal_gage_ids is not None:
-                well_reach_mapping = well_reach_mapping[
-                    well_reach_mapping['gage_id_reach'].isin(terminal_gage_ids)
-                ]
-            
-            # Fill missing gage_ids
-            missing_mask = filtered_data['gage_id'].isna()
-            if missing_mask.any() and len(well_reach_mapping) > 0:
-                temp_merge = pd.merge(
-                    filtered_data[missing_mask][['well_id']],
-                    well_reach_mapping[['well_id', 'gage_id_reach']].rename(columns={'gage_id_reach': 'gage_id'}),
-                    on='well_id',
-                    how='left'
-                )
-                filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
-                print(f"  Filled {temp_merge['gage_id'].notna().sum():,} additional gage_ids from well_reach (terminal only)")
-        
-        # Convert to string and remove .0 suffix
-        filtered_data['gage_id'] = filtered_data['gage_id'].astype(str).str.replace('.0', '', regex=False)
-        filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
-        
-        # Final filter to only terminal gages (remove any non-terminal that might have slipped through)
-        if terminal_gage_ids is not None:
-            terminal_gage_ids_str = set([str(int(x)) for x in terminal_gage_ids])
-            before_count = len(filtered_data)
-            filtered_data = filtered_data[filtered_data['gage_id'].isin(terminal_gage_ids_str)]
-            after_count = len(filtered_data)
-            if before_count > 0:
-                print(f"  Final filter to terminal gages: {before_count:,} -> {after_count:,} records ({after_count/before_count*100:.1f}% retained)")
-            else:
-                print(f"  Final filter to terminal gages: {before_count:,} -> {after_count:,} records")
+    # Add gage_id and normalize format
+    filtered_data = add_gage_id_to_filtered_data(
+        filtered_data, wells_with_gages, well_reach, terminal_gages
+    )
+    filtered_data = normalize_and_filter_gage_ids(
+        filtered_data, terminal_gages, "filtered_data"
+    )
 
     # Save results
     filtered_data.to_csv(os.path.join(output_dir, 'filtered_by_elevation.csv'), index=False)
@@ -595,142 +627,26 @@ def main():
         filtered_data = run_step_6_elevation_filtering(
             daily_data, well_reach, dirs['processed'], args.buffer, wells_with_gages, terminal_gages
         )
-    elif start_step > 6:
-        print(f"\nLoading Step 6 results from previous run...")
-        filtered_data = pd.read_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'))
-        filtered_data['date'] = pd.to_datetime(filtered_data['date'])
-        # Add gage_id if missing
-        if 'gage_id' not in filtered_data.columns or filtered_data['gage_id'].isna().all():
-            print("\nAdding gage_id to filtered_data...")
-            # Primary source: well_reach (Downstream_Gage) - has more coverage
-            if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
-                well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
-                    'Well_ID': 'well_id',
-                    'Downstream_Gage': 'gage_id'
-                }).dropna(subset=['gage_id']).drop_duplicates()
-                filtered_data = pd.merge(
-                    filtered_data,
-                    well_reach_mapping,
-                    on='well_id',
-                    how='left'
-                )
-                print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from well_reach (Downstream_Gage)")
-            
-            # Secondary source: wells_with_gages (fill missing)
-            if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
-                gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
-                # Only fill missing gage_ids
-                if 'gage_id' in filtered_data.columns:
-                    missing_mask = filtered_data['gage_id'].isna()
-                    if missing_mask.any():
-                        temp_merge = pd.merge(
-                            filtered_data[missing_mask][['well_id']],
-                            gage_mapping,
-                            on='well_id',
-                            how='left'
-                        )
-                        filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
-                        print(f"  Filled {filtered_data['gage_id'].notna().sum() - (missing_mask.sum() - temp_merge['gage_id'].notna().sum()):,} additional gage_ids from wells_with_gages")
-                else:
-                    filtered_data = pd.merge(
-                        filtered_data,
-                        gage_mapping,
-                        on='well_id',
-                        how='left'
-                    )
-                    print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from wells_with_gages")
-            
-            # Convert gage_id to string to match streamflow data type
-            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
-            filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
-            
-            # Re-save with gage_id
-            filtered_data.to_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'), index=False)
-    elif start_step > 6:
+    else:
         print(f"\nLoading Step 6 results from previous run...")
         filtered_data = pd.read_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'))
         filtered_data['date'] = pd.to_datetime(filtered_data['date'])
         
-        # Ensure gage_id is string type
+        # Add gage_id if missing and normalize format
+        filtered_data = add_gage_id_to_filtered_data(
+            filtered_data, wells_with_gages, well_reach, terminal_gages
+        )
+        filtered_data = normalize_and_filter_gage_ids(
+            filtered_data, terminal_gages, "filtered_data"
+        )
+        
+        # Re-save if gage_id was added
         if 'gage_id' in filtered_data.columns:
-            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str).str.replace('.0', '', regex=False)
-            filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
-        
-        # Filter to only terminal gages if terminal_gages is available
-        if terminal_gages is not None and 'id' in terminal_gages.columns and 'gage_id' in filtered_data.columns:
-            terminal_gage_ids = set(terminal_gages['id'].astype(str).unique())
-            before_count = len(filtered_data)
-            # Ensure gage_id is string for comparison
-            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
-            filtered_data = filtered_data[filtered_data['gage_id'].isin(terminal_gage_ids)]
-            after_count = len(filtered_data)
-            if before_count > 0:
-                print(f"Filtered to terminal gages only: {before_count:,} -> {after_count:,} records ({after_count/before_count*100:.1f}% retained)")
-            else:
-                print(f"Filtered to terminal gages only: {before_count:,} -> {after_count:,} records")
-        
-        # Add gage_id if missing
-        if 'gage_id' not in filtered_data.columns:
-            print("Adding gage_id to filtered_data...")
-            if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
-                gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
-                filtered_data = pd.merge(
-                    filtered_data,
-                    gage_mapping,
-                    on='well_id',
-                    how='left'
-                )
-            if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
-                well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
-                    'Well_ID': 'well_id',
-                    'Downstream_Gage': 'gage_id_reach'
-                }).dropna(subset=['gage_id_reach']).drop_duplicates()
-                filtered_data = pd.merge(
-                    filtered_data,
-                    well_reach_mapping,
-                    on='well_id',
-                    how='left'
-                )
-                if 'gage_id' in filtered_data.columns:
-                    filtered_data['gage_id'] = filtered_data['gage_id'].fillna(filtered_data['gage_id_reach'])
-                else:
-                    filtered_data['gage_id'] = filtered_data['gage_id_reach']
-                filtered_data = filtered_data.drop('gage_id_reach', axis=1, errors='ignore')
-            filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
-            filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
+            filtered_data.to_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'), index=False)
     
-    # Ensure gage_id is string type in both filtered_data and streamflow for merging
-    if filtered_data is not None and 'gage_id' in filtered_data.columns:
-        # Convert float gage_id to string (remove .0 suffix)
-        filtered_data = filtered_data.copy()
-        filtered_data['gage_id'] = filtered_data['gage_id'].astype(str).str.replace('.0', '', regex=False)
-        filtered_data['gage_id'] = filtered_data['gage_id'].replace('nan', pd.NA)
-        
-        # Filter to only terminal gages
-        if terminal_gages is not None and 'id' in terminal_gages.columns:
-            terminal_gage_ids = set(terminal_gages['id'].astype(str).unique())
-            before_count = len(filtered_data)
-            # Ensure gage_id is string for comparison
-            if 'gage_id' in filtered_data.columns:
-                filtered_data['gage_id'] = filtered_data['gage_id'].astype(str)
-                filtered_data = filtered_data[filtered_data['gage_id'].isin(terminal_gage_ids)]
-            after_count = len(filtered_data)
-            if before_count > 0:
-                print(f"\nFiltered to terminal gages only: {before_count:,} -> {after_count:,} records ({after_count/before_count*100:.1f}% retained)")
-            else:
-                print(f"\nFiltered to terminal gages only: {before_count:,} -> {after_count:,} records")
-    
+    # Normalize gage_id format and filter streamflow to terminal gages
     if streamflow is not None and 'gage_id' in streamflow.columns:
-        streamflow = streamflow.copy()
-        streamflow['gage_id'] = streamflow['gage_id'].astype(str)
-        
-        # Filter streamflow to only terminal gages
-        if terminal_gages is not None and 'id' in terminal_gages.columns:
-            terminal_gage_ids = set(terminal_gages['id'].astype(str).unique())
-            before_count = len(streamflow)
-            streamflow = streamflow[streamflow['gage_id'].isin(terminal_gage_ids)]
-            after_count = len(streamflow)
-            print(f"Filtered streamflow to terminal gages only: {before_count:,} -> {after_count:,} records ({after_count/before_count*100:.1f}% retained)")
+        streamflow = normalize_and_filter_gage_ids(streamflow, terminal_gages, "streamflow")
 
     # Step 7: Pairing
     if start_step <= 7 <= end_step:
