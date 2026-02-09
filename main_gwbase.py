@@ -567,7 +567,7 @@ def main():
     )
     # Load streamflow data with all records (including bfd=0) for monthly aggregation
     streamflow = gwbase.load_streamflow_data(
-        os.path.join(dirs['raw'], 'streamflow/GSLB_ML'),
+        os.path.join(dirs['raw'], 'streamflow/gages_with_bfd_predictions'),
         filter_bfd=False  # Keep all records for monthly bfd=1 aggregation
     )
     # Note: bfd_classification is optional - streamflow data already contains 'bfd' column

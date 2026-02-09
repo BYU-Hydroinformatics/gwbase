@@ -330,9 +330,9 @@ def load_streamflow_data(
                     col_lower = col.lower()
                     if col_lower == date_col.lower():
                         col_mapping[col] = 'date'
-                    elif col_lower in [q_col.lower(), 'q', 'discharge', 'flow']:
+                    elif col_lower in [q_col.lower(), 'q', 'discharge', 'flow', 'streamflow']:
                         col_mapping[col] = 'q'
-                    elif col_lower == 'ml_bfd':
+                    elif col_lower in ['ml_bfd', 'bfd']:
                         col_mapping[col] = 'bfd'
                 
                 df = df.rename(columns=col_mapping)
@@ -359,7 +359,7 @@ def load_streamflow_data(
                 col_mapping[col] = 'gage_id'
             elif col_lower == date_col.lower():
                 col_mapping[col] = 'date'
-            elif col_lower in [q_col.lower(), 'discharge', 'flow']:
+            elif col_lower in [q_col.lower(), 'q', 'discharge', 'flow', 'streamflow']:
                 col_mapping[col] = 'q'
 
         df = df.rename(columns=col_mapping)
