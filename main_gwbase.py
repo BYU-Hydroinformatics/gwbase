@@ -417,8 +417,12 @@ def run_step_8_delta_metrics(
 
 def run_step_9_analysis(
     data_with_deltas: pd.DataFrame,
+    paired: pd.DataFrame,
+    clean_data: pd.DataFrame,
+    monthly_data: pd.DataFrame,
     output_dir: str,
-    figures_dir: str
+    figures_dir: str,
+    processed_dir: str = None
 ):
     """
     Step 9: Analyze ΔWTE–ΔQ Relationships
@@ -426,7 +430,9 @@ def run_step_9_analysis(
     - Linear regression by gage
     - Linear regression by well
     - Mutual information analysis
-    - Cross-correlation analysis
+    - Lag vs no-lag MI comparison
+    - Well time series plots
+    - Seasonal and monthly analysis
     """
     print("\n" + "="*60)
     print("STEP 9: Regression and Correlation Analysis")
@@ -447,7 +453,77 @@ def run_step_9_analysis(
     mi_results = gwbase.compute_mi_analysis(data_with_deltas)
     mi_results.to_csv(os.path.join(output_dir, 'mi_analysis.csv'), index=False)
 
-    # Create visualizations
+    # Lag vs no-lag MI comparison (using 1-year lag)
+    lag_1yr_path = os.path.join(output_dir, 'data_lag_1yr.csv')
+    if os.path.exists(lag_1yr_path):
+        lag_1yr = pd.read_csv(lag_1yr_path)
+        lag_1yr['date'] = pd.to_datetime(lag_1yr['date'])
+        lag_col = 'delta_wte_lag_1_year'
+        if lag_col in lag_1yr.columns:
+            mi_lag = gwbase.compute_mi_analysis(lag_1yr, delta_wte_col=lag_col)
+            merged_mi, by_gage, lag_summary = gwbase.compare_lag_vs_no_lag(mi_results, mi_lag)
+            merged_mi.to_csv(os.path.join(output_dir, 'mi_lag_comparison.csv'), index=False)
+            gwbase.plot_mi_comparison(merged_mi, os.path.join(figures_dir, 'mi_compare'))
+        else:
+            print("  Skipping lag MI comparison: lag column not found")
+    else:
+        print("  Skipping lag MI comparison: data_lag_1yr.csv not found")
+
+    # MI distribution charts
+    gwbase.plot_mi_results(mi_results, os.path.join(figures_dir, 'mi'))
+
+    # High R² gages: filter and plot separately
+    high_r2_filtered = gwbase.plot_high_r2_gages(
+        data_with_deltas, gage_stats,
+        os.path.join(figures_dir, 'scatter_plots_high_r2'),
+        r2_threshold=0.1
+    )
+    if len(high_r2_filtered) > 0:
+        high_r2_filtered.to_csv(os.path.join(output_dir, 'data_high_r2_gages.csv'), index=False)
+
+    # Well time series with raw obs, daily interp, monthly interp
+    if clean_data is not None and len(clean_data) > 0 and monthly_data is not None and len(monthly_data) > 0:
+        gwbase.plot_well_timeseries_with_interpolation(
+            paired,
+            clean_data,
+            monthly_data,
+            os.path.join(figures_dir, 'well_timeseries'),
+            max_wells_per_gage=15
+        )
+    else:
+        # Fallback to simple timeseries if interpolation data not available
+        gwbase.plot_well_timeseries(
+            paired,
+            os.path.join(figures_dir, 'well_timeseries'),
+            max_wells_per_gage=15
+        )
+
+    # Seasonal and monthly analysis
+    seasonal_stats, monthly_stats = gwbase.compute_seasonal_monthly_analysis(data_with_deltas)
+    if len(seasonal_stats) > 0:
+        seasonal_stats.to_csv(os.path.join(output_dir, 'seasonal_analysis.csv'), index=False)
+    if len(monthly_stats) > 0:
+        monthly_stats.to_csv(os.path.join(output_dir, 'monthly_analysis.csv'), index=False)
+    gwbase.plot_seasonal_monthly_analysis(
+        seasonal_stats, monthly_stats,
+        os.path.join(figures_dir, 'seasonal_monthly')
+    )
+    gwbase.plot_seasonal_monthly_scatter(
+        data_with_deltas,
+        os.path.join(figures_dir, 'seasonal_monthly')
+    )
+
+    # Combined regression summary table (overall + seasonal + monthly)
+    combined_regression = gwbase.combine_regression_summary(
+        gage_stats, seasonal_stats, monthly_stats
+    )
+    combined_regression.to_csv(
+        os.path.join(output_dir, 'regression_summary_combined.csv'),
+        index=False
+    )
+    print(f"  Combined regression table: {len(combined_regression)} rows -> regression_summary_combined.csv")
+
+    # Scatter and regression plots
     gwbase.plot_regression_summary(gage_stats, os.path.join(figures_dir, 'regression'))
     gwbase.plot_delta_scatter(data_with_deltas, os.path.join(figures_dir, 'scatter_plots'))
 
@@ -678,10 +754,18 @@ def main():
         data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
         data_with_deltas['date'] = pd.to_datetime(data_with_deltas['date'])
 
-    # Step 9: Analysis
+    # Step 9: Analysis (needs clean_data and monthly interpolated for well timeseries)
     if start_step <= 9 <= end_step:
+        # Ensure clean_data and monthly data available for well timeseries
+        if clean_data is None:
+            clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))
+            clean_data['date'] = pd.to_datetime(clean_data['date'])
+        if daily_data is None:
+            daily_data = pd.read_csv(os.path.join(dirs['processed'], 'well_pchip_monthly.csv'))
+            daily_data['date'] = pd.to_datetime(daily_data['date'])
         gage_stats, well_stats, mi_results = run_step_9_analysis(
-            data_with_deltas, dirs['features'], dirs['figures']
+            data_with_deltas, paired, clean_data, daily_data,
+            dirs['features'], dirs['figures'], dirs['processed']
         )
 
 

@@ -124,6 +124,62 @@ def interpolate_daily_pchip(
     return interpolated_df
 
 
+def interpolate_daily(
+    well_ts: pd.DataFrame,
+    well_id_col: str = 'well_id',
+    date_col: str = 'date',
+    value_col: str = 'wte'
+) -> pd.DataFrame:
+    """
+    Perform PCHIP interpolation to **daily** resolution.
+
+    Parameters
+    ----------
+    well_ts : pd.DataFrame
+        DataFrame with well_id, date, wte
+    well_id_col, date_col, value_col : str
+        Column names
+
+    Returns
+    -------
+    pd.DataFrame
+        Daily interpolated values
+    """
+    well_ts = well_ts.copy()
+    well_ts[date_col] = pd.to_datetime(well_ts[date_col])
+    well_ts = well_ts.sort_values([well_id_col, date_col])
+
+    interpolated_list = []
+
+    for well_id, group in well_ts.groupby(well_id_col):
+        if len(group) < 2:
+            continue
+
+        start_date = group[date_col].min().normalize()
+        end_date = group[date_col].max().normalize()
+        full_dates = pd.date_range(start=start_date, end=end_date, freq='D')
+
+        x_obs = group[date_col].map(pd.Timestamp.toordinal)
+        y_obs = group[value_col].values
+
+        try:
+            interpolator = PchipInterpolator(x_obs, y_obs)
+            x_new = full_dates.map(pd.Timestamp.toordinal)
+            y_new = interpolator(x_new)
+
+            interpolated_list.append(pd.DataFrame({
+                well_id_col: well_id,
+                date_col: full_dates,
+                value_col: y_new
+            }))
+        except Exception:
+            continue
+
+    if interpolated_list:
+        return pd.concat(interpolated_list, ignore_index=True)
+    return pd.DataFrame(columns=[well_id_col, date_col, value_col])
+
+
 def interpolate_with_well_info(
     well_ts: pd.DataFrame,
     well_info: pd.DataFrame,

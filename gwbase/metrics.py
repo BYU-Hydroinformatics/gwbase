@@ -181,12 +181,18 @@ def compute_regression_by_gage(
         x = clean[delta_wte_col].values
         y = clean[delta_q_col].values
 
-        # Check for variance
+        # Check for variance and sufficient data
+        if len(x) < 2 or len(y) < 2:
+            continue
         if np.std(x) == 0 or np.std(y) == 0:
             continue
 
-        # Compute regression
-        slope, intercept, r_value, p_value, std_err = linregress(x, y)
+        # Compute regression with error handling
+        try:
+            slope, intercept, r_value, p_value, std_err = linregress(x, y)
+        except (ValueError, AttributeError, TypeError) as e:
+            # Skip if regression fails (e.g., insufficient data, NaN issues)
+            continue
 
         results.append({
             'gage_id': gage_id,
@@ -261,16 +267,21 @@ def compute_regression_by_well(
         x = clean[delta_wte_col].values
         y = clean[delta_q_col].values
 
-        # Check for variance
+        # Check for variance and sufficient data
+        if len(x) < 2 or len(y) < 2:
+            continue
         if np.std(x) == 0 or np.std(y) == 0:
             continue
 
-        # Compute regression
-        slope, intercept, r_value, p_value, std_err = linregress(x, y)
-
-        # Compute correlations
-        pearson_r, pearson_p = pearsonr(x, y)
-        spearman_r, spearman_p = spearmanr(x, y)
+        # Compute regression with error handling
+        try:
+            slope, intercept, r_value, p_value, std_err = linregress(x, y)
+            # Compute correlations
+            pearson_r, pearson_p = pearsonr(x, y)
+            spearman_r, spearman_p = spearmanr(x, y)
+        except (ValueError, AttributeError, TypeError) as e:
+            # Skip if regression/correlation fails (e.g., insufficient data, NaN issues)
+            continue
 
         results.append({
             'well_id': well_id,

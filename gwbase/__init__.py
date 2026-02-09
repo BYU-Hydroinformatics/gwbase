@@ -60,6 +60,7 @@ from .preprocessing import (
 # Step 5: Interpolation
 from .interpolation import (
     interpolate_daily_pchip,
+    interpolate_daily,
     interpolate_with_well_info,
     validate_interpolation,
 )
@@ -101,16 +102,23 @@ from .analysis import (
     compute_ccf_by_watershed,
     compare_lag_vs_no_lag,
     aggregate_ccf_results,
+    compute_seasonal_monthly_analysis,
+    combine_regression_summary,
 )
 
 # Visualization
 from .visualization import (
     plot_well_timeseries,
+    plot_well_timeseries_with_interpolation,
     plot_delta_scatter,
+    plot_high_r2_gages,
     plot_filtered_pairs_scatter,
     plot_filtered_pairs_by_gage,
     plot_pairs_by_r2_category,
     plot_mi_comparison,
+    plot_mi_results,
     plot_regression_summary,
     plot_elevation_filter_sensitivity,
+    plot_seasonal_monthly_analysis,
+    plot_seasonal_monthly_scatter,
 )

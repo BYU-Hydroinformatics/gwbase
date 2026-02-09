@@ -410,6 +410,184 @@ def compare_lag_vs_no_lag(
     return merged, by_gage, summary
 
 
+def compute_seasonal_monthly_analysis(
+    data: pd.DataFrame,
+    date_col: str = 'date',
+    gage_id_col: str = 'gage_id',
+    delta_wte_col: str = 'delta_wte',
+    delta_q_col: str = 'delta_q',
+    min_observations: int = 5
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Compute regression statistics (ΔQ vs ΔWTE) by season and by month.
+
+    Seasons: Winter (Dec-Feb), Spring (Mar-May), Summer (Jun-Aug), Fall (Sep-Nov)
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data with delta_wte, delta_q, date, gage_id
+    date_col : str, default 'date'
+        Column name for date
+    gage_id_col : str, default 'gage_id'
+        Column name for gage ID
+    delta_wte_col : str, default 'delta_wte'
+        Column name for ΔWTE
+    delta_q_col : str, default 'delta_q'
+        Column name for ΔQ
+    min_observations : int, default 5
+        Minimum observations for regression
+
+    Returns
+    -------
+    tuple
+        (seasonal_stats, monthly_stats)
+    """
+    from scipy.stats import linregress
+
+    df = data.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+    df = df.dropna(subset=[delta_wte_col, delta_q_col, date_col, gage_id_col])
+
+    def _get_season(month: int) -> str:
+        if month in [12, 1, 2]:
+            return 'Winter'
+        elif month in [3, 4, 5]:
+            return 'Spring'
+        elif month in [6, 7, 8]:
+            return 'Summer'
+        else:
+            return 'Fall'
+
+    month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    df['month'] = df[date_col].dt.month
+    df['season'] = df['month'].apply(_get_season)
+
+    def _regress_group(g):
+        if len(g) < min_observations:
+            return None
+        x, y = g[delta_wte_col].values, g[delta_q_col].values
+        if np.std(x) == 0 or np.std(y) == 0:
+            return None
+        try:
+            slope, intercept, r, p, se = linregress(x, y)
+            return {'slope': slope, 'r_squared': r ** 2, 'p_value': p, 'n_obs': len(g)}
+        except (ValueError, AttributeError):
+            return None
+
+    # Seasonal stats
+    seasonal_records = []
+    for (gage_id, season), grp in df.groupby([gage_id_col, 'season']):
+        res = _regress_group(grp)
+        if res:
+            seasonal_records.append({
+                gage_id_col: gage_id,
+                'season': season,
+                'n_observations': res['n_obs'],
+                'slope': res['slope'],
+                'r_squared': res['r_squared'],
+                'p_value': res['p_value']
+            })
+    seasonal_stats = pd.DataFrame(seasonal_records)
+
+    # Monthly stats
+    monthly_records = []
+    for (gage_id, month), grp in df.groupby([gage_id_col, 'month']):
+        res = _regress_group(grp)
+        if res:
+            monthly_records.append({
+                gage_id_col: gage_id,
+                'month': month,
+                'month_name': month_names[month],
+                'n_observations': res['n_obs'],
+                'slope': res['slope'],
+                'r_squared': res['r_squared'],
+                'p_value': res['p_value']
+            })
+    monthly_stats = pd.DataFrame(monthly_records)
+
+    print(f"\nSeasonal/Monthly Analysis:")
+    print(f"  Seasonal: {len(seasonal_stats)} gage-season combinations")
+    print(f"  Monthly: {len(monthly_stats)} gage-month combinations")
+    if len(seasonal_stats) > 0:
+        print(f"  Seasonal mean R²: {seasonal_stats['r_squared'].mean():.4f}")
+    if len(monthly_stats) > 0:
+        print(f"  Monthly mean R²: {monthly_stats['r_squared'].mean():.4f}")
+
+    return seasonal_stats, monthly_stats
+
+
+def combine_regression_summary(
+    gage_stats: pd.DataFrame,
+    seasonal_stats: pd.DataFrame,
+    monthly_stats: pd.DataFrame,
+    gage_id_col: str = 'gage_id'
+) -> pd.DataFrame:
+    """
+    Combine overall, seasonal, and monthly regression results (R², slope) into one table.
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined table with columns: gage_id, period_type, period, n_observations, slope, r_squared, p_value
+    """
+    records = []
+
+    # Overall
+    for _, row in gage_stats.iterrows():
+        records.append({
+            gage_id_col: row[gage_id_col],
+            'period_type': 'overall',
+            'period': 'overall',
+            'n_observations': row.get('n_observations', np.nan),
+            'slope': row.get('slope', np.nan),
+            'r_squared': row.get('r_squared', np.nan),
+            'p_value': row.get('p_value', np.nan)
+        })
+
+    # Seasonal
+    for _, row in seasonal_stats.iterrows():
+        records.append({
+            gage_id_col: row[gage_id_col],
+            'period_type': 'seasonal',
+            'period': row['season'],
+            'n_observations': row.get('n_observations', np.nan),
+            'slope': row.get('slope', np.nan),
+            'r_squared': row.get('r_squared', np.nan),
+            'p_value': row.get('p_value', np.nan)
+        })
+
+    # Monthly
+    for _, row in monthly_stats.iterrows():
+        records.append({
+            gage_id_col: row[gage_id_col],
+            'period_type': 'monthly',
+            'period': row.get('month_name', row.get('month', '')),
+            'n_observations': row.get('n_observations', np.nan),
+            'slope': row.get('slope', np.nan),
+            'r_squared': row.get('r_squared', np.nan),
+            'p_value': row.get('p_value', np.nan)
+        })
+
+    combined = pd.DataFrame(records)
+
+    # Order: gage, then overall -> seasonal -> monthly, then by period
+    type_order = {'overall': 0, 'seasonal': 1, 'monthly': 2}
+    period_order = ['overall', 'Winter', 'Spring', 'Summer', 'Fall',
+                    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    combined['_type_key'] = combined['period_type'].map(type_order)
+    combined['_period_key'] = combined['period'].map(
+        lambda p: period_order.index(p) if p in period_order else 999
+    )
+    combined = combined.sort_values([gage_id_col, '_type_key', '_period_key'])
+    combined = combined.drop(columns=['_type_key', '_period_key'])
+
+    return combined
+
+
 def aggregate_ccf_results(ccf_results: Dict) -> pd.DataFrame:
     """
     Aggregate CCF results into a summary DataFrame.
