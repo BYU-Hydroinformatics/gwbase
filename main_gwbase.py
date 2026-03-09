@@ -23,7 +23,6 @@ Usage:
 Author: GWBASE Development Team
 """
 
-import argparse
 import os
 from pathlib import Path
 import pandas as pd
@@ -250,20 +249,41 @@ def run_step_3_associate_reaches(
 def run_step_4_preprocessing(
     well_ts: pd.DataFrame,
     output_dir: str,
-    min_points: int = 5
+    min_points: int = 20,
+    min_years: int = 5
 ):
     """
     Step 4: Filter Wells with Insufficient Data
 
     - Detect and remove outliers
-    - Filter wells based on data quality
+    - Filter wells with fewer than min_points measurements
+    - Filter wells whose measurements span fewer than min_years years
     """
     print("\n" + "="*60)
     print("STEP 4: Data Preprocessing")
     print("="*60)
 
-    # Clean well data
+    # Clean well data (outlier removal)
     clean_data = gwbase.clean_well_data_for_interpolation(well_ts, min_points=min_points)
+
+    # Filter wells by minimum number of measurements
+    well_counts = clean_data.groupby('well_id').size()
+    wells_enough_pts = well_counts[well_counts >= min_points].index
+    before = clean_data['well_id'].nunique()
+    clean_data = clean_data[clean_data['well_id'].isin(wells_enough_pts)]
+    after = clean_data['well_id'].nunique()
+    print(f"  Min measurements filter ({min_points}): {before} -> {after} wells")
+
+    # Filter wells by minimum year span
+    clean_data['date'] = pd.to_datetime(clean_data['date'])
+    well_spans = clean_data.groupby('well_id')['date'].agg(
+        lambda x: (x.max() - x.min()).days / 365.25
+    )
+    wells_enough_years = well_spans[well_spans >= min_years].index
+    before = clean_data['well_id'].nunique()
+    clean_data = clean_data[clean_data['well_id'].isin(wells_enough_years)]
+    after = clean_data['well_id'].nunique()
+    print(f"  Min years filter ({min_years}): {before} -> {after} wells")
 
     # Save results
     clean_data.to_csv(os.path.join(output_dir, 'well_ts_cleaned.csv'), index=False)
@@ -534,35 +554,14 @@ def run_step_9_analysis(
 
 def main():
     """Main entry point for GWBASE workflow."""
-    parser = argparse.ArgumentParser(
-        description='GWBASE - Groundwater-Baseflow Analysis System'
-    )
-    parser.add_argument(
-        '--data-dir', '-d',
-        type=str,
-        default='.',
-        help='Base directory for data (default: current directory)'
-    )
-    parser.add_argument(
-        '--steps',
-        type=str,
-        default='all',
-        help='Steps to run (e.g., "1-5" or "4,5,6" or "all")'
-    )
-    parser.add_argument(
-        '--buffer',
-        type=float,
-        default=30.0,
-        help='Elevation buffer in meters for Step 6 (default: 30)'
-    )
-    parser.add_argument(
-        '--output-dir',
-        type=str,
-        default=None,
-        help='Output directory path (if not specified, creates new timestamped directory)'
-    )
 
-    args = parser.parse_args()
+    # ── Configuration ──────────────────────────────────────────
+    data_dir = '.'
+    output_dir = None
+    steps = 'all'
+    buffer_m = 30.0
+    min_wte = 20    # minimum water table measurements per well
+    min_years = 5   # minimum year span of measurements per well
 
     print("\n" + "="*60)
     print("GWBASE - Groundwater-Baseflow Analysis System")
@@ -570,29 +569,29 @@ def main():
     print("="*60)
 
     # Setup directories
-    dirs = setup_directories(args.data_dir, args.output_dir)
+    dirs = setup_directories(data_dir, output_dir)
 
-    print(f"\nData directory: {args.data_dir}")
-    print(f"Processing steps: {args.steps}")
+    print(f"\nData directory: {data_dir}")
+    print(f"Processing steps: {steps}")
 
     # Parse steps to run
     start_step = 1
     end_step = 9
-    if args.steps != 'all':
-        if '-' in args.steps:
+    if steps != 'all':
+        if '-' in steps:
             # Range format: "1-5" or "6-9"
-            parts = args.steps.split('-')
+            parts = steps.split('-')
             start_step = int(parts[0])
             end_step = int(parts[1]) if len(parts) > 1 else 9
-        elif ',' in args.steps:
+        elif ',' in steps:
             # Comma-separated: "4,5,6"
-            steps_to_run = [int(s.strip()) for s in args.steps.split(',')]
+            steps_to_run = [int(s.strip()) for s in steps.split(',')]
             start_step = min(steps_to_run)
             end_step = max(steps_to_run)
         else:
             # Single step: "6"
-            start_step = int(args.steps)
-            end_step = int(args.steps)
+            start_step = int(steps)
+            end_step = int(steps)
 
     print(f"Running steps {start_step} to {end_step}")
 
@@ -699,7 +698,7 @@ def main():
 
     # Step 4: Preprocessing
     if start_step <= 4 <= end_step:
-        clean_data = run_step_4_preprocessing(well_ts, dirs['processed'])
+        clean_data = run_step_4_preprocessing(well_ts, dirs['processed'], min_points=min_wte, min_years=min_years)
     elif start_step > 4:
         print(f"\nLoading Step 4 results from previous run...")
         clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))
@@ -715,7 +714,7 @@ def main():
     # Step 6: Elevation Filtering
     if start_step <= 6 <= end_step:
         filtered_data = run_step_6_elevation_filtering(
-            daily_data, well_reach, dirs['processed'], args.buffer, wells_with_gages, terminal_gages
+            daily_data, well_reach, dirs['processed'], buffer_m, wells_with_gages, terminal_gages
         )
     else:
         print(f"\nLoading Step 6 results from previous run...")
