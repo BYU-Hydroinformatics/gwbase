@@ -13,7 +13,15 @@
       "Bash(python3:*)",
       "Bash(wc:*)",
       "Bash(grep:*)",
-      "Bash(source /Users/xueyi/Documents/code/gwbase/.venv/bin/activate)"
+      "Bash(source /Users/xueyi/Documents/code/gwbase/.venv/bin/activate)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_min10_yr3 GWBASE_STEPS=4-9 GWBASE_MIN_WTE=10 GWBASE_MIN_YEARS=3 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_min10_yr3 GWBASE_STEPS=9 GWBASE_MIN_WTE=10 GWBASE_MIN_YEARS=3 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_min30_yr10 GWBASE_STEPS=4-9 GWBASE_MIN_WTE=30 GWBASE_MIN_YEARS=10 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_min30_yr10 GWBASE_STEPS=9 GWBASE_MIN_WTE=30 GWBASE_MIN_YEARS=10 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_buf60 GWBASE_STEPS=6-9 GWBASE_BUFFER_M=60 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_buf60 GWBASE_STEPS=9 GWBASE_BUFFER_M=60 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_none GWBASE_STEPS=4-9 GWBASE_MIN_WTE=1 GWBASE_MIN_YEARS=0 python main_gwbase.py)",
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_none GWBASE_STEPS=9 GWBASE_MIN_WTE=1 GWBASE_MIN_YEARS=0 python main_gwbase.py)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false

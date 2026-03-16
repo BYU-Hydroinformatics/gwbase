@@ -13,6 +13,7 @@ from scipy.stats import pearsonr, spearmanr
 from scipy import signal
 from sklearn.metrics import mutual_info_score
 from sklearn.preprocessing import KBinsDiscretizer
+import pymannkendall as mk
 from typing import Dict, Tuple
 
 
@@ -44,6 +45,10 @@ def calculate_mutual_info(
     -------
     >>> mi = calculate_mutual_info(delta_wte, delta_q)
     """
+    # Ensure numeric dtype and coerce non-numeric values to NaN
+    x = pd.to_numeric(pd.Series(x), errors='coerce').to_numpy()
+    y = pd.to_numeric(pd.Series(y), errors='coerce').to_numpy()
+
     # Remove NaN values
     mask = ~(np.isnan(x) | np.isnan(y))
     x_clean, y_clean = x[mask], y[mask]
@@ -363,6 +368,12 @@ def compare_lag_vs_no_lag(
         'n_records': 'n_records_no_lag'
     })
 
+    # Normalize gage_id types to string before merging
+    no_lag_mi = no_lag_mi.copy()
+    lag_mi = lag_mi.copy()
+    no_lag_mi[gage_id_col] = no_lag_mi[gage_id_col].astype(str)
+    lag_mi[gage_id_col] = lag_mi[gage_id_col].astype(str)
+
     # Merge
     merged = pd.merge(
         no_lag_mi,
@@ -630,3 +641,247 @@ def aggregate_ccf_results(ccf_results: Dict) -> pd.DataFrame:
     print(f"  Mean max correlation: {df['max_correlation'].mean():.4f}")
 
     return df
+
+
+# ── Mann-Kendall + Sen's Slope ────────────────────────────────────────────────
+
+def _mk_row(series: pd.Series, dates: pd.Series) -> dict:
+    """Run MK test on a time series; return a result dict."""
+    x = series.dropna().values
+    if len(x) < 4:
+        return {
+            'trend': 'insufficient data', 'h': False,
+            'p_value': np.nan, 'z': np.nan, 'tau': np.nan,
+            'sen_slope': np.nan, 'intercept': np.nan,
+        }
+    try:
+        res = mk.original_test(x)
+        return {
+            'trend': res.trend,
+            'h': bool(res.h),
+            'p_value': float(res.p),
+            'z': float(res.z),
+            'tau': float(res.Tau),
+            'sen_slope': float(res.slope),   # units per time step
+            'intercept': float(res.intercept),
+        }
+    except Exception:
+        return {
+            'trend': 'error', 'h': False,
+            'p_value': np.nan, 'z': np.nan, 'tau': np.nan,
+            'sen_slope': np.nan, 'intercept': np.nan,
+        }
+
+
+def compute_mk_well_wte(
+    well_ts: pd.DataFrame,
+    well_id_col: str = 'well_id',
+    date_col: str = 'date',
+    wte_col: str = 'WTE',
+    min_obs: int = 10,
+) -> pd.DataFrame:
+    """
+    Mann-Kendall test and Sen's slope on WTE time series for each well.
+
+    Sen's slope unit: feet per year (converted from ft per observation using
+    median inter-observation interval).
+
+    Parameters
+    ----------
+    well_ts : pd.DataFrame
+        Raw or cleaned well time series (one row per measurement).
+    min_obs : int
+        Minimum observations required to run the test.
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per well with MK statistics and Sen's slope (ft/yr).
+    """
+    well_ts = well_ts.copy()
+    well_ts[date_col] = pd.to_datetime(well_ts[date_col])
+    well_ts = well_ts.sort_values([well_id_col, date_col])
+
+    results = []
+    for wid, grp in well_ts.groupby(well_id_col):
+        grp = grp.dropna(subset=[wte_col]).sort_values(date_col)
+        n = len(grp)
+        if n < min_obs:
+            continue
+
+        row = _mk_row(grp[wte_col], grp[date_col])
+
+        # Convert Sen's slope from ft/step to ft/yr
+        if n >= 2:
+            intervals = grp[date_col].diff().dt.days.dropna()
+            median_interval_days = intervals.median()
+            if median_interval_days > 0:
+                row['sen_slope_yr'] = row['sen_slope'] * (365.25 / median_interval_days)
+            else:
+                row['sen_slope_yr'] = np.nan
+        else:
+            row['sen_slope_yr'] = np.nan
+
+        yr_span = (grp[date_col].max() - grp[date_col].min()).days / 365.25
+        row.update({
+            well_id_col: wid,
+            'n_obs': n,
+            'year_span': round(yr_span, 2),
+            'date_start': grp[date_col].min().date(),
+            'date_end': grp[date_col].max().date(),
+        })
+        results.append(row)
+
+    df = pd.DataFrame(results)
+    if df.empty:
+        return df
+
+    # Reorder columns
+    front = [well_id_col, 'n_obs', 'year_span', 'date_start', 'date_end',
+             'trend', 'h', 'p_value', 'z', 'tau', 'sen_slope_yr', 'sen_slope', 'intercept']
+    df = df[[c for c in front if c in df.columns]]
+
+    sig = (df['p_value'] < 0.05).sum()
+    dec = ((df['p_value'] < 0.05) & (df['sen_slope_yr'] < 0)).sum()
+    inc = ((df['p_value'] < 0.05) & (df['sen_slope_yr'] > 0)).sum()
+    print(f"MK test - well WTE:")
+    print(f"  Wells tested: {len(df)}")
+    print(f"  Significant (p<0.05): {sig} ({sig/len(df)*100:.1f}%)")
+    print(f"    Declining: {dec}  |  Increasing: {inc}")
+    print(f"  Median Sen's slope: {df['sen_slope_yr'].median():.4f} ft/yr")
+    return df
+
+
+def compute_mk_streamflow(
+    streamflow_monthly: pd.DataFrame,
+    gage_id_col: str = 'gage_id',
+    date_col: str = 'date',
+    q_col: str = 'q',
+    min_obs: int = 10,
+) -> pd.DataFrame:
+    """
+    Mann-Kendall test and Sen's slope on monthly BFD=1 streamflow for each gage.
+
+    Sen's slope unit: cfs per year.
+
+    Parameters
+    ----------
+    streamflow_monthly : pd.DataFrame
+        Monthly aggregated streamflow (one row per gage-month).
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per gage with MK statistics and Sen's slope (cfs/yr).
+    """
+    sf = streamflow_monthly.copy()
+    sf[date_col] = pd.to_datetime(sf[date_col])
+    sf = sf.sort_values([gage_id_col, date_col])
+
+    results = []
+    for gid, grp in sf.groupby(gage_id_col):
+        grp = grp.dropna(subset=[q_col]).sort_values(date_col)
+        n = len(grp)
+        if n < min_obs:
+            continue
+
+        row = _mk_row(grp[q_col], grp[date_col])
+        # Monthly data: slope per month -> per year
+        row['sen_slope_yr'] = row['sen_slope'] * 12
+
+        yr_span = (grp[date_col].max() - grp[date_col].min()).days / 365.25
+        row.update({
+            gage_id_col: gid,
+            'n_obs': n,
+            'year_span': round(yr_span, 2),
+            'date_start': grp[date_col].min().date(),
+            'date_end': grp[date_col].max().date(),
+        })
+        results.append(row)
+
+    df = pd.DataFrame(results)
+    if df.empty:
+        return df
+
+    front = [gage_id_col, 'n_obs', 'year_span', 'date_start', 'date_end',
+             'trend', 'h', 'p_value', 'z', 'tau', 'sen_slope_yr', 'sen_slope', 'intercept']
+    df = df[[c for c in front if c in df.columns]]
+
+    sig = (df['p_value'] < 0.05).sum()
+    print(f"MK test - gage streamflow:")
+    print(f"  Gages tested: {len(df)}")
+    print(f"  Significant (p<0.05): {sig}")
+    print(f"  Median Sen's slope: {df['sen_slope_yr'].median():.4f} cfs/yr")
+    return df
+
+
+def compute_mk_gage_wte(
+    data_with_deltas: pd.DataFrame,
+    gage_id_col: str = 'gage_id',
+    date_col: str = 'date',
+    wte_col: str = 'wte',
+    min_obs: int = 10,
+) -> pd.DataFrame:
+    """
+    Mann-Kendall test and Sen's slope on per-gage mean monthly WTE
+    (aggregated across all wells in the catchment).
+
+    Sen's slope unit: feet per year.
+
+    Parameters
+    ----------
+    data_with_deltas : pd.DataFrame
+        Paired delta data with well_id, gage_id, date, wte columns.
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per gage.
+    """
+    df = data_with_deltas.copy()
+    df[date_col] = pd.to_datetime(df[date_col])
+
+    # Aggregate: mean WTE across all wells per gage per month
+    monthly_mean = (
+        df.groupby([gage_id_col, date_col])[wte_col]
+        .mean()
+        .reset_index()
+        .sort_values([gage_id_col, date_col])
+    )
+
+    results = []
+    for gid, grp in monthly_mean.groupby(gage_id_col):
+        grp = grp.dropna(subset=[wte_col]).sort_values(date_col)
+        n = len(grp)
+        if n < min_obs:
+            continue
+
+        row = _mk_row(grp[wte_col], grp[date_col])
+        row['sen_slope_yr'] = row['sen_slope'] * 12  # monthly -> annual
+
+        yr_span = (grp[date_col].max() - grp[date_col].min()).days / 365.25
+        n_wells = df[df[gage_id_col] == gid]['well_id'].nunique() if 'well_id' in df.columns else np.nan
+        row.update({
+            gage_id_col: gid,
+            'n_months': n,
+            'n_wells': int(n_wells) if (not isinstance(n_wells, float) or not np.isnan(n_wells)) else np.nan,
+            'year_span': round(yr_span, 2),
+            'date_start': grp[date_col].min().date(),
+            'date_end': grp[date_col].max().date(),
+        })
+        results.append(row)
+
+    df_out = pd.DataFrame(results)
+    if df_out.empty:
+        return df_out
+
+    front = [gage_id_col, 'n_months', 'n_wells', 'year_span', 'date_start', 'date_end',
+             'trend', 'h', 'p_value', 'z', 'tau', 'sen_slope_yr', 'sen_slope', 'intercept']
+    df_out = df_out[[c for c in front if c in df_out.columns]]
+
+    sig = (df_out['p_value'] < 0.05).sum()
+    print(f"MK test - gage mean WTE (aggregated):")
+    print(f"  Gages tested: {len(df_out)}")
+    print(f"  Significant (p<0.05): {sig}")
+    print(f"  Median Sen's slope: {df_out['sen_slope_yr'].median():.4f} ft/yr")
+    return df_out

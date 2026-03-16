@@ -303,6 +303,9 @@ def plot_high_r2_gages(
     Filter to gages with R² > threshold and create scatter plots for their well data.
     """
     os.makedirs(output_dir, exist_ok=True)
+    if len(gage_stats) == 0 or 'r_squared' not in gage_stats.columns:
+        print(f"  No gages with R² > {r2_threshold}; skipping high-R² plots")
+        return pd.DataFrame()
     high_r2_gages = gage_stats[gage_stats['r_squared'] > r2_threshold][gage_id_col].unique()
     if len(high_r2_gages) == 0:
         print(f"  No gages with R² > {r2_threshold}; skipping high-R² plots")
@@ -1279,6 +1282,10 @@ def plot_seasonal_monthly_scatter(
     df = data.copy()
     df[date_col] = pd.to_datetime(df[date_col])
     df = df.dropna(subset=[delta_wte_col, delta_q_col, date_col, gage_id_col])
+
+    if len(df) == 0:
+        print(f"  No data for seasonal/monthly scatter plots; skipping")
+        return
 
     def _get_season(month: int) -> str:
         if month in [12, 1, 2]:

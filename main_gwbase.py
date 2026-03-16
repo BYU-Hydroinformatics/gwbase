@@ -442,7 +442,8 @@ def run_step_9_analysis(
     monthly_data: pd.DataFrame,
     output_dir: str,
     figures_dir: str,
-    processed_dir: str = None
+    processed_dir: str = None,
+    gage_name_map: dict = None
 ):
     """
     Step 9: Analyze ΔWTE–ΔQ Relationships
@@ -460,18 +461,18 @@ def run_step_9_analysis(
 
     # Regression by gage
     gage_stats = gwbase.compute_regression_by_gage(data_with_deltas)
-    gage_stats.to_csv(os.path.join(output_dir, 'regression_by_gage.csv'), index=False)
+    _add_gage_name(gage_stats, gage_name_map).to_csv(os.path.join(output_dir, 'regression_by_gage.csv'), index=False)
 
     # Regression by well
     well_stats = gwbase.compute_regression_by_well(data_with_deltas)
-    well_stats.to_csv(os.path.join(output_dir, 'regression_by_well.csv'), index=False)
+    _add_gage_name(well_stats, gage_name_map).to_csv(os.path.join(output_dir, 'regression_by_well.csv'), index=False)
 
     # Summary
     summary = gwbase.summarize_regression_results(gage_stats, well_stats)
 
     # Mutual information analysis
     mi_results = gwbase.compute_mi_analysis(data_with_deltas)
-    mi_results.to_csv(os.path.join(output_dir, 'mi_analysis.csv'), index=False)
+    _add_gage_name(mi_results, gage_name_map).to_csv(os.path.join(output_dir, 'mi_analysis.csv'), index=False)
 
     # Lag vs no-lag MI comparison (using 1-year lag)
     lag_1yr_path = os.path.join(output_dir, 'data_lag_1yr.csv')
@@ -482,7 +483,7 @@ def run_step_9_analysis(
         if lag_col in lag_1yr.columns:
             mi_lag = gwbase.compute_mi_analysis(lag_1yr, delta_wte_col=lag_col)
             merged_mi, by_gage, lag_summary = gwbase.compare_lag_vs_no_lag(mi_results, mi_lag)
-            merged_mi.to_csv(os.path.join(output_dir, 'mi_lag_comparison.csv'), index=False)
+            _add_gage_name(merged_mi, gage_name_map).to_csv(os.path.join(output_dir, 'mi_lag_comparison.csv'), index=False)
             gwbase.plot_mi_comparison(merged_mi, os.path.join(figures_dir, 'mi_compare'))
         else:
             print("  Skipping lag MI comparison: lag column not found")
@@ -521,9 +522,9 @@ def run_step_9_analysis(
     # Seasonal and monthly analysis
     seasonal_stats, monthly_stats = gwbase.compute_seasonal_monthly_analysis(data_with_deltas)
     if len(seasonal_stats) > 0:
-        seasonal_stats.to_csv(os.path.join(output_dir, 'seasonal_analysis.csv'), index=False)
+        _add_gage_name(seasonal_stats, gage_name_map).to_csv(os.path.join(output_dir, 'seasonal_analysis.csv'), index=False)
     if len(monthly_stats) > 0:
-        monthly_stats.to_csv(os.path.join(output_dir, 'monthly_analysis.csv'), index=False)
+        _add_gage_name(monthly_stats, gage_name_map).to_csv(os.path.join(output_dir, 'monthly_analysis.csv'), index=False)
     gwbase.plot_seasonal_monthly_analysis(
         seasonal_stats, monthly_stats,
         os.path.join(figures_dir, 'seasonal_monthly')
@@ -537,7 +538,7 @@ def run_step_9_analysis(
     combined_regression = gwbase.combine_regression_summary(
         gage_stats, seasonal_stats, monthly_stats
     )
-    combined_regression.to_csv(
+    _add_gage_name(combined_regression, gage_name_map).to_csv(
         os.path.join(output_dir, 'regression_summary_combined.csv'),
         index=False
     )
@@ -547,9 +548,52 @@ def run_step_9_analysis(
     gwbase.plot_regression_summary(gage_stats, os.path.join(figures_dir, 'regression'))
     gwbase.plot_delta_scatter(data_with_deltas, os.path.join(figures_dir, 'scatter_plots'))
 
+    # ── Mann-Kendall + Sen's Slope ──────────────────────────────
+    print("\n--- Mann-Kendall Trend Analysis ---")
+
+    # 1. Per-well WTE trend (using paired well data, which has monthly wte)
+    mk_well = gwbase.compute_mk_well_wte(
+        data_with_deltas.rename(columns={'wte': 'WTE'}),
+        wte_col='WTE', min_obs=10
+    )
+    if len(mk_well) > 0:
+        _add_gage_name(
+            pd.merge(mk_well, data_with_deltas[['well_id','gage_id']].drop_duplicates(),
+                     on='well_id', how='left'),
+            gage_name_map
+        ).to_csv(os.path.join(output_dir, 'mk_well_wte.csv'), index=False)
+
+    # 2. Per-gage aggregated WTE trend
+    mk_gage_wte = gwbase.compute_mk_gage_wte(data_with_deltas)
+    if len(mk_gage_wte) > 0:
+        _add_gage_name(mk_gage_wte, gage_name_map).to_csv(
+            os.path.join(output_dir, 'mk_gage_wte.csv'), index=False
+        )
+
+    # 3. Per-gage streamflow trend
+    sf_path = os.path.join(processed_dir, 'streamflow_monthly_bfd.csv') if processed_dir else None
+    if sf_path and os.path.exists(sf_path):
+        sf_monthly = pd.read_csv(sf_path)
+        mk_sf = gwbase.compute_mk_streamflow(sf_monthly)
+        if len(mk_sf) > 0:
+            _add_gage_name(mk_sf, gage_name_map).to_csv(
+                os.path.join(output_dir, 'mk_streamflow.csv'), index=False
+            )
+
     print(f"\nStep 9 complete.")
 
     return gage_stats, well_stats, mi_results
+
+
+def _add_gage_name(df: pd.DataFrame, gage_name_map: dict, gage_id_col: str = 'gage_id') -> pd.DataFrame:
+    """Insert gage_name column immediately after gage_id, using the provided name map."""
+    if not gage_name_map or gage_id_col not in df.columns:
+        return df
+    df = df.copy()
+    names = df[gage_id_col].astype(str).map(gage_name_map)
+    insert_pos = df.columns.get_loc(gage_id_col) + 1
+    df.insert(insert_pos, 'gage_name', names)
+    return df
 
 
 def main():
@@ -562,6 +606,42 @@ def main():
     buffer_m = 30.0
     min_wte = 20    # minimum water table measurements per well
     min_years = 5   # minimum year span of measurements per well
+    exclude_gages = ['10167000', '10171000']  # Gages to exclude from analysis
+
+    # Allow overriding configuration via environment variables
+    env_output_dir = os.environ.get("GWBASE_OUTPUT_DIR")
+    if env_output_dir:
+        output_dir = env_output_dir
+
+    env_steps = os.environ.get("GWBASE_STEPS")
+    if env_steps:
+        steps = env_steps
+
+    # Optional overrides for well filtering configuration
+    env_min_wte = os.environ.get("GWBASE_MIN_WTE")
+    if env_min_wte is not None:
+        try:
+            min_wte = int(env_min_wte)
+        except ValueError:
+            print(f"Warning: GWBASE_MIN_WTE='{env_min_wte}' is not a valid integer. Using default {min_wte}.")
+
+    env_min_years = os.environ.get("GWBASE_MIN_YEARS")
+    if env_min_years is not None:
+        try:
+            min_years = int(env_min_years)
+        except ValueError:
+            print(f"Warning: GWBASE_MIN_YEARS='{env_min_years}' is not a valid integer. Using default {min_years}.")
+
+    env_buffer_m = os.environ.get("GWBASE_BUFFER_M")
+    if env_buffer_m is not None:
+        try:
+            buffer_m = float(env_buffer_m)
+        except ValueError:
+            print(f"Warning: GWBASE_BUFFER_M='{env_buffer_m}' is not a valid float. Using default {buffer_m}.")
+
+    env_exclude_gages = os.environ.get("GWBASE_EXCLUDE_GAGES")
+    if env_exclude_gages is not None:
+        exclude_gages = [g.strip() for g in env_exclude_gages.split(',') if g.strip()]
 
     print("\n" + "="*60)
     print("GWBASE - Groundwater-Baseflow Analysis System")
@@ -635,7 +715,10 @@ def main():
     except Exception as e:
         print(f"Warning: Could not load COMID_v2 from gsl_nwm.csv: {e}")
         print("Continuing without COMID_v2 (downstream gage finding may be limited)")
-    
+
+    # Build gage name lookup map {str(id): name}
+    gage_name_map = dict(zip(gage_df['id'].astype(str), gage_df['name'])) if 'name' in gage_df.columns else {}
+
     wells_gdf, well_ts, well_info = gwbase.load_groundwater_data(
         well_locations_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_wells_with_aquifers.csv'),
         timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_TS_with_aquifers.csv')
@@ -677,6 +760,16 @@ def main():
         # Rebuild graph if needed for later steps
         G = gwbase.build_stream_network_graph(stream_gdf)
         matched_gages = gwbase.match_gages_to_catchments(gage_df, catchment_gdf)
+
+    # Apply gage exclusion filter
+    if exclude_gages and terminal_gages is not None:
+        before = len(terminal_gages)
+        terminal_gages = terminal_gages[~terminal_gages['id'].astype(str).isin(exclude_gages)]
+        after = len(terminal_gages)
+        if before > after:
+            print(f"\nExcluded {before - after} gage(s) from analysis: {exclude_gages}")
+        if upstream_df is not None and 'Gage_ID' in upstream_df.columns:
+            upstream_df = upstream_df[~upstream_df['Gage_ID'].astype(str).isin(exclude_gages)]
 
     # Step 2: Locate Wells
     if start_step <= 2 <= end_step:
@@ -740,6 +833,10 @@ def main():
     # Step 7: Pairing
     if start_step <= 7 <= end_step:
         paired = run_step_7_pairing(filtered_data, streamflow, None, dirs['processed'])
+        # Re-save with gage_name added
+        _add_gage_name(paired, gage_name_map).to_csv(
+            os.path.join(dirs['processed'], 'paired_well_streamflow.csv'), index=False
+        )
     elif start_step > 7:
         print(f"\nLoading Step 7 results from previous run...")
         paired = pd.read_csv(os.path.join(dirs['processed'], 'paired_well_streamflow.csv'))
@@ -748,6 +845,10 @@ def main():
     # Step 8: Delta Metrics
     if start_step <= 8 <= end_step:
         data_with_deltas = run_step_8_delta_metrics(paired, dirs['features'])
+        # Re-save with gage_name added
+        _add_gage_name(data_with_deltas, gage_name_map).to_csv(
+            os.path.join(dirs['features'], 'data_with_deltas.csv'), index=False
+        )
     elif start_step > 8:
         print(f"\nLoading Step 8 results from previous run...")
         data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
@@ -755,6 +856,9 @@ def main():
 
     # Step 9: Analysis (needs clean_data and monthly interpolated for well timeseries)
     if start_step <= 9 <= end_step:
+        # Always reload data_with_deltas from CSV to avoid gage_id type issues from in-memory pipeline
+        data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
+        data_with_deltas['date'] = pd.to_datetime(data_with_deltas['date'])
         # Ensure clean_data and monthly data available for well timeseries
         if clean_data is None:
             clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))
@@ -764,7 +868,8 @@ def main():
             daily_data['date'] = pd.to_datetime(daily_data['date'])
         gage_stats, well_stats, mi_results = run_step_9_analysis(
             data_with_deltas, paired, clean_data, daily_data,
-            dirs['features'], dirs['figures'], dirs['processed']
+            dirs['features'], dirs['figures'], dirs['processed'],
+            gage_name_map=gage_name_map
         )
 
 

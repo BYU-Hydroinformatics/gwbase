@@ -104,6 +104,9 @@ from .analysis import (
     aggregate_ccf_results,
     compute_seasonal_monthly_analysis,
     combine_regression_summary,
+    compute_mk_well_wte,
+    compute_mk_streamflow,
+    compute_mk_gage_wte,
 )
 
 # Visualization
