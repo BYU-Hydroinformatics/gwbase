@@ -721,7 +721,7 @@ def main():
 
     wells_gdf, well_ts, well_info = gwbase.load_groundwater_data(
         well_locations_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_wells_with_aquifers.csv'),
-        timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2023_TS_with_aquifers.csv')
+        timeseries_path=os.path.join(dirs['raw'], 'groundwater/GSLB_1900-2025_TS_with_aquifers.csv')
     )
     # Load streamflow data with all records (including bfd=0) for monthly aggregation
     streamflow = gwbase.load_streamflow_data(
