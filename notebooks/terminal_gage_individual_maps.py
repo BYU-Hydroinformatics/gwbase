@@ -44,9 +44,10 @@ streams   = gpd.read_file(DATA / "raw/hydrography/gslb_stream.shp")
 lakes     = gpd.read_file(DATA / "raw/hydrography/lake.shp")
 wells_gdf = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
 
+RESULTS = BASE / "results"
 all_gages = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")
-term_df   = pd.read_csv(DATA / "processed/terminal_gages.csv")
-upstream  = pd.read_csv(DATA / "processed/terminal_gage_upstream_catchments.csv")
+term_df   = pd.read_csv(RESULTS / "processed/terminal_gages.csv")
+upstream  = pd.read_csv(RESULTS / "processed/terminal_gage_upstream_catchments.csv")
 
 TARGET_CRS = "EPSG:3857"
 basin     = basin.to_crs(TARGET_CRS)

@@ -48,8 +48,9 @@ lakes_3857 = lakes.to_crs(TARGET_CRS)
 wells_gdf = gpd.read_file(DATA / "raw/hydrography/well_shp.shp").to_crs(TARGET_CRS)
 
 all_gages = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")
-term_df   = pd.read_csv(DATA / "processed/terminal_gages.csv")
-upstream  = pd.read_csv(DATA / "processed/terminal_gage_upstream_catchments.csv")
+RESULTS = BASE / "results"
+term_df   = pd.read_csv(RESULTS / "processed/terminal_gages.csv")
+upstream  = pd.read_csv(RESULTS / "processed/terminal_gage_upstream_catchments.csv")
 
 catchment["linkno_int"] = catchment["linkno"].astype(float).astype(int)
 
