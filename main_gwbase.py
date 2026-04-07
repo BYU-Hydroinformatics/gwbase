@@ -31,6 +31,37 @@ import pandas as pd
 import gwbase
 
 
+def load_config(config_path: str = 'config.yaml') -> dict:
+    """Load workflow configuration from a YAML file.
+
+    Falls back to built-in defaults if the file is missing or unreadable,
+    so the workflow can still run without a config file.
+    """
+    defaults = {
+        'network': {
+            'manual_remove_gages': [10171000, 10167000],
+            'manual_add_gages':    [10163000, 10153100, 10152000],
+        },
+        'filtering': {'elevation_buffer_m': 30.0},
+        'well_quality': {'min_measurements': 20, 'min_years': 3},
+        'analysis': {'exclude_gages': ['10167000', '10171000']},
+    }
+    try:
+        import yaml
+        with open(config_path, 'r') as f:
+            user_cfg = yaml.safe_load(f) or {}
+        # Merge top-level sections (user values override defaults)
+        for section, values in defaults.items():
+            if section in user_cfg:
+                defaults[section].update(user_cfg[section])
+        print(f"Loaded configuration from: {config_path}")
+    except FileNotFoundError:
+        print(f"config.yaml not found – using built-in defaults.")
+    except Exception as e:
+        print(f"Warning: could not parse config.yaml ({e}) – using built-in defaults.")
+    return defaults
+
+
 def setup_directories(base_dir: str, output_dir: str = None) -> dict:
     """Set up directory structure for GWBASE analysis."""
     from datetime import datetime
@@ -60,59 +91,34 @@ def setup_directories(base_dir: str, output_dir: str = None) -> dict:
 
 def add_gage_id_to_filtered_data(
     filtered_data: pd.DataFrame,
-    wells_with_gages: pd.DataFrame = None,
-    well_reach: pd.DataFrame = None,
-    terminal_gages: pd.DataFrame = None
+    wells_with_gages: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Add gage_id to filtered_data from available sources.
-    
-    Priority:
-    1. wells_with_gages (all are terminal gages)
-    2. well_reach (Downstream_Gage, filtered to terminal gages only)
+    Add gage_id to filtered_data from Step 2 (polygon containment) output.
+
+    Step 2 is the sole authoritative source for well→gage assignment.
+    Step 3's Downstream_Gage is used only for reach elevation (Step 6) and
+    consistency validation, never for gage assignment.
     """
     if 'gage_id' in filtered_data.columns and filtered_data['gage_id'].notna().any():
         return filtered_data
-    
-    print("\nAdding gage_id to filtered_data...")
-    
-    # Get terminal gage IDs for filtering
-    terminal_gage_ids = None
-    if terminal_gages is not None and 'id' in terminal_gages.columns:
-        terminal_gage_ids = set(terminal_gages['id'].astype(float).unique())
-    
-    # Primary source: wells_with_gages (all are terminal gages)
-    if wells_with_gages is not None and 'gage_id' in wells_with_gages.columns:
-        gage_mapping = wells_with_gages[['well_id', 'gage_id']].drop_duplicates()
-        gage_mapping['gage_id'] = gage_mapping['gage_id'].astype(str).str.replace('.0', '', regex=False)
-        filtered_data = pd.merge(filtered_data, gage_mapping, on='well_id', how='left')
-        print(f"  Added {filtered_data['gage_id'].notna().sum():,} gage_ids from wells_with_gages")
-    
-    # Secondary source: well_reach (Downstream_Gage) - but only terminal gages
-    if well_reach is not None and 'Downstream_Gage' in well_reach.columns:
-        well_reach_mapping = well_reach[['Well_ID', 'Downstream_Gage']].rename(columns={
-            'Well_ID': 'well_id',
-            'Downstream_Gage': 'gage_id_reach'
-        }).dropna(subset=['gage_id_reach']).drop_duplicates()
-        
-        # Filter to only terminal gages if available
-        if terminal_gage_ids is not None:
-            well_reach_mapping = well_reach_mapping[
-                well_reach_mapping['gage_id_reach'].isin(terminal_gage_ids)
-            ]
-        
-        # Fill missing gage_ids
-        missing_mask = filtered_data['gage_id'].isna()
-        if missing_mask.any() and len(well_reach_mapping) > 0:
-            temp_merge = pd.merge(
-                filtered_data[missing_mask][['well_id']],
-                well_reach_mapping[['well_id', 'gage_id_reach']].rename(columns={'gage_id_reach': 'gage_id'}),
-                on='well_id',
-                how='left'
-            )
-            filtered_data.loc[missing_mask, 'gage_id'] = temp_merge['gage_id'].values
-            print(f"  Filled {temp_merge['gage_id'].notna().sum():,} additional gage_ids from well_reach")
-    
+
+    if wells_with_gages is None or 'gage_id' not in wells_with_gages.columns:
+        raise RuntimeError(
+            "add_gage_id_to_filtered_data requires Step 2 output (wells_with_gages). "
+            "Re-run from step 2."
+        )
+
+    print("\nAdding gage_id to filtered_data from Step 2 (polygon containment)...")
+    gage_mapping = (
+        wells_with_gages[['well_id', 'gage_id']]
+        .drop_duplicates()
+        .assign(gage_id=lambda d: d['gage_id'].astype(str).str.replace(r'\.0$', '', regex=True))
+    )
+    filtered_data = pd.merge(filtered_data, gage_mapping, on='well_id', how='left')
+    n_matched = filtered_data['gage_id'].notna().sum()
+    n_missing = filtered_data['gage_id'].isna().sum()
+    print(f"  Matched: {n_matched:,} records  |  Unmatched (dropped at normalize step): {n_missing:,}")
     return filtered_data
 
 
@@ -148,7 +154,9 @@ def run_step_1_network_analysis(
     stream_gdf,
     catchment_gdf,
     gage_df,
-    output_dir: str
+    output_dir: str,
+    manual_remove: list = None,
+    manual_add: list = None,
 ):
     """
     Step 1: Identify Stream Network and Upstream Catchments
@@ -157,6 +165,13 @@ def run_step_1_network_analysis(
     - Match gages to catchments
     - Identify terminal gages
     - Delineate upstream catchments
+
+    Parameters
+    ----------
+    manual_remove : list of int, optional
+        Gage IDs to remove from the terminal list (loaded from config.yaml).
+    manual_add : list of int, optional
+        Gage IDs to add to the terminal list (loaded from config.yaml).
     """
     print("\n" + "="*60)
     print("STEP 1: Stream Network and Upstream Catchments")
@@ -168,8 +183,12 @@ def run_step_1_network_analysis(
     # Match gages to catchments
     matched_gages = gwbase.match_gages_to_catchments(gage_df, catchment_gdf)
 
-    # Identify terminal gages
-    terminal_ids = gwbase.identify_terminal_gages(matched_gages, G)
+    # Identify terminal gages using adjustments from config.yaml
+    terminal_ids = gwbase.identify_terminal_gages(
+        matched_gages, G,
+        manual_remove=manual_remove or [],
+        manual_add=manual_add or [],
+    )
 
     # Get terminal gage info
     terminal_gages = matched_gages[matched_gages['id'].isin(terminal_ids)]
@@ -325,13 +344,14 @@ def run_step_6_elevation_filtering(
     output_dir: str,
     buffer_m: float = 30.0,
     wells_with_gages: pd.DataFrame = None,
-    terminal_gages: pd.DataFrame = None
+    terminal_gages: pd.DataFrame = None,
 ):
     """
     Step 6: Elevation-Based Filtering
 
     - Filter wells based on WTE vs stream elevation
     - Retain wells with potential stream connectivity
+    - gage_id is sourced exclusively from Step 2 (wells_with_gages)
     """
     print("\n" + "="*60)
     print("STEP 6: Elevation-Based Filtering")
@@ -342,9 +362,9 @@ def run_step_6_elevation_filtering(
         daily_data, well_reach, distance_buffer_meters=buffer_m
     )
 
-    # Add gage_id and normalize format
+    # Add gage_id from Step 2 only
     filtered_data = add_gage_id_to_filtered_data(
-        filtered_data, wells_with_gages, well_reach, terminal_gages
+        filtered_data, wells_with_gages
     )
     filtered_data = normalize_and_filter_gage_ids(
         filtered_data, terminal_gages, "filtered_data"
@@ -546,7 +566,8 @@ def run_step_9_analysis(
 
     # Scatter and regression plots
     gwbase.plot_regression_summary(gage_stats, os.path.join(figures_dir, 'regression'))
-    gwbase.plot_delta_scatter(data_with_deltas, os.path.join(figures_dir, 'scatter_plots'))
+    gwbase.plot_delta_scatter(data_with_deltas, os.path.join(figures_dir, 'scatter_plots'),
+                              gage_name_map=gage_name_map)
 
     # ── Mann-Kendall + Sen's Slope ──────────────────────────────
     print("\n--- Mann-Kendall Trend Analysis ---")
@@ -600,15 +621,21 @@ def main():
     """Main entry point for GWBASE workflow."""
 
     # ── Configuration ──────────────────────────────────────────
-    data_dir = '.'
-    output_dir = None
-    steps = 'all'
-    buffer_m = 30.0
-    min_wte = 20    # minimum water table measurements per well
-    min_years = 5   # minimum year span of measurements per well
-    exclude_gages = ['10167000', '10171000']  # Gages to exclude from analysis
+    cfg = load_config('config.yaml')
 
-    # Allow overriding configuration via environment variables
+    data_dir   = '.'
+    output_dir = None
+    steps      = 'all'
+
+    # Values from config (can still be overridden by env vars below)
+    buffer_m      = cfg['filtering']['elevation_buffer_m']
+    min_wte       = cfg['well_quality']['min_measurements']
+    min_years     = cfg['well_quality']['min_years']
+    exclude_gages = [str(g) for g in cfg['analysis']['exclude_gages']]
+    manual_remove = [int(g) for g in cfg['network']['manual_remove_gages']]
+    manual_add    = [int(g) for g in cfg['network']['manual_add_gages']]
+
+    # Environment variable overrides (take precedence over config.yaml)
     env_output_dir = os.environ.get("GWBASE_OUTPUT_DIR")
     if env_output_dir:
         output_dir = env_output_dir
@@ -617,7 +644,6 @@ def main():
     if env_steps:
         steps = env_steps
 
-    # Optional overrides for well filtering configuration
     env_min_wte = os.environ.get("GWBASE_MIN_WTE")
     if env_min_wte is not None:
         try:
@@ -750,7 +776,9 @@ def main():
     # Step 1: Network Analysis
     if start_step <= 1 <= end_step:
         G, matched_gages, terminal_gages, upstream_df = run_step_1_network_analysis(
-            stream_gdf, catchment_gdf, gage_df, dirs['processed']
+            stream_gdf, catchment_gdf, gage_df, dirs['processed'],
+            manual_remove=manual_remove,
+            manual_add=manual_add,
         )
     elif start_step > 1:
         # Load previous results
@@ -781,13 +809,57 @@ def main():
         wells_with_gages = pd.read_csv(os.path.join(dirs['processed'], 'wells_in_catchments.csv'))
 
     # Step 3: Associate Reaches
+    # Only process wells that passed Step 2 (polygon containment).
+    # Step 3's role is to find the nearest reach for elevation comparison in Step 6;
+    # gage assignment is already authoritative from Step 2.
     if start_step <= 3 <= end_step:
+        if wells_with_gages is None:
+            raise RuntimeError("Step 3 requires Step 2 output. Re-run from step 2.")
+        step2_well_ids = set(wells_with_gages['well_id'].astype(str).unique())
+        wells_gdf_step2 = wells_gdf[
+            wells_gdf['well_id'].astype(str).isin(step2_well_ids)
+        ].copy()
+        print(f"\nStep 3 input: {len(wells_gdf_step2)} wells (filtered to Step 2 watershed wells)")
         well_reach = run_step_3_associate_reaches(
-            wells_gdf, stream_gdf, gage_df, reach_elev, dirs['processed']
+            wells_gdf_step2, stream_gdf, gage_df, reach_elev, dirs['processed']
         )
     elif start_step > 3:
         print(f"\nLoading Step 3 results from previous run...")
         well_reach = pd.read_csv(os.path.join(dirs['processed'], 'well_reach_relationships.csv'))
+
+    # ── Consistency check: Step 3 Downstream_Gage vs Step 2 gage_id ──────────
+    # Since Step 3 now only processes Step 2 wells, Downstream_Gage should
+    # agree with the gage_id from Step 2 for every well.  Mismatches indicate
+    # that the stream network topology and the catchment polygon assignment
+    # disagree and warrant manual inspection.
+    if well_reach is not None and wells_with_gages is not None:
+        wr_col = 'Well_ID' if 'Well_ID' in well_reach.columns else 'well_id'
+        dg_col = 'Downstream_Gage' if 'Downstream_Gage' in well_reach.columns else None
+
+        if dg_col is not None:
+            wr_check = well_reach[[wr_col, dg_col]].copy()
+            wr_check.columns = ['well_id', 'downstream_gage']
+            wr_check['well_id'] = wr_check['well_id'].astype(str).str.replace(r'\.0$', '', regex=True)
+            wr_check['downstream_gage'] = wr_check['downstream_gage'].astype(str).str.replace(r'\.0$', '', regex=True)
+
+            s2_check = wells_with_gages[['well_id', 'gage_id']].copy()
+            s2_check['well_id'] = s2_check['well_id'].astype(str).str.replace(r'\.0$', '', regex=True)
+            s2_check['gage_id']  = s2_check['gage_id'].astype(str).str.replace(r'\.0$', '', regex=True)
+
+            merged_check = wr_check.merge(s2_check, on='well_id', how='inner')
+            mismatches = merged_check[
+                merged_check['downstream_gage'] != merged_check['gage_id']
+            ]
+            if mismatches.empty:
+                print("\nConsistency check PASSED: Step 3 Downstream_Gage agrees with Step 2 gage_id for all wells.")
+            else:
+                print(f"\nConsistency check WARNING: {len(mismatches)} well(s) have mismatched gage assignments.")
+                print("  Step 2 (polygon containment) is authoritative; Step 3 Downstream_Gage is advisory.")
+                print(mismatches[['well_id', 'gage_id', 'downstream_gage']].to_string(index=False))
+                mismatches.to_csv(
+                    os.path.join(dirs['processed'], 'step3_gage_mismatch.csv'), index=False
+                )
+                print(f"  Mismatches saved to: step3_gage_mismatch.csv")
 
     # Step 4: Preprocessing
     if start_step <= 4 <= end_step:
@@ -814,9 +886,9 @@ def main():
         filtered_data = pd.read_csv(os.path.join(dirs['processed'], 'filtered_by_elevation.csv'))
         filtered_data['date'] = pd.to_datetime(filtered_data['date'])
         
-        # Add gage_id if missing and normalize format
+        # Add gage_id if missing (Step 2 is the sole source)
         filtered_data = add_gage_id_to_filtered_data(
-            filtered_data, wells_with_gages, well_reach, terminal_gages
+            filtered_data, wells_with_gages
         )
         filtered_data = normalize_and_filter_gage_ids(
             filtered_data, terminal_gages, "filtered_data"
@@ -859,6 +931,9 @@ def main():
         # Always reload data_with_deltas from CSV to avoid gage_id type issues from in-memory pipeline
         data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
         data_with_deltas['date'] = pd.to_datetime(data_with_deltas['date'])
+        # Remove outlier for gage 10163000 (delta_wte > 1400 ft)
+        mask = (data_with_deltas['gage_id'].astype(str) == '10163000') & (data_with_deltas['delta_wte'].abs() > 1400)
+        data_with_deltas = data_with_deltas[~mask].copy()
         # Ensure clean_data and monthly data available for well timeseries
         if clean_data is None:
             clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))

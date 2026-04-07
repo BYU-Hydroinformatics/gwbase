@@ -1,0 +1,43 @@
+# GWBASE Workflow Configuration
+# Edit this file to customize the analysis without modifying source code.
+
+# ── Step 1: Stream Network Configuration ──────────────────────────────────────
+network:
+  # Gage IDs to manually remove from terminal gage list.
+  # Reason: Jordan River gages are intermediate outlets within the basin,
+  # not true terminal outlets to Great Salt Lake.
+  manual_remove_gages:
+    - 10171000  # JORDAN RIVER AT SALT LAKE CITY
+    - 10167000  # JORDAN RIVER AT 1700 SOUTH AT SALT LAKE CITY
+
+  # Gage IDs to manually add to the terminal gage list.
+  # Reason: These drain directly to Great Salt Lake / Utah Lake but are not
+  # automatically detected as terminal because they sit upstream of Jordan River
+  # in the raw network topology.
+  manual_add_gages:
+    - 10163000  # PROVO RIVER AT PROVO
+    - 10153100  # HOBBLE CREEK AT 1650 WEST AT SPRINGVILLE
+    - 10152000  # SPANISH FORK NEAR LAKE SHORE
+
+# ── Step 6: Elevation-Based Filtering ─────────────────────────────────────────
+filtering:
+  # Maximum allowed vertical distance (meters) between well WTE and stream
+  # reach elevation. Wells with WTE more than this distance below the streambed
+  # are excluded as hydrologically disconnected.
+  elevation_buffer_m: 30.0
+
+# ── Step 4: Well Data Quality Filters ─────────────────────────────────────────
+well_quality:
+  # Minimum number of WTE measurements required per well
+  min_measurements: 20
+  # Minimum record length (years) required per well
+  min_years: 3
+
+# ── Analysis: Gage Exclusions ─────────────────────────────────────────────────
+analysis:
+  # Gages to exclude from the final ΔWTE–ΔQ analysis (post-Step 1).
+  # Typically the same as manual_remove_gages but kept separate so that
+  # network delineation and analysis exclusions can diverge if needed.
+  exclude_gages:
+    - "10167000"
+    - "10171000"

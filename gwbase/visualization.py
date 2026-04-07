@@ -656,7 +656,8 @@ def plot_delta_scatter(
     delta_wte_col: str = 'delta_wte',
     delta_q_col: str = 'delta_q',
     class_col: str = None,
-    figsize: Tuple[int, int] = (12, 6)
+    figsize: Tuple[int, int] = (12, 6),
+    gage_name_map: dict = None
 ) -> pd.DataFrame:
     """
     Create scatter plots of ΔQ vs ΔWTE by gage with regression lines.
@@ -747,7 +748,10 @@ def plot_delta_scatter(
                     fontsize=10, ha='right', va='top',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
+        gage_name = gage_name_map.get(str(gage_id), '') if gage_name_map else ''
         title = f'Gage {gage_id}'
+        if gage_name:
+            title += f'\n{gage_name}'
         if class_col and class_col in group.columns:
             class_val = group[class_col].iloc[0]
             title += f' - {class_val}'
