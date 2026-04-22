@@ -148,7 +148,7 @@ n_gages = len(gages)
 COLORS  = plt.cm.tab10(np.linspace(0, 0.9, n_gages))
 lags_x  = np.arange(MAX_LAG + 1)
 
-fig, axes = plt.subplots(2, 3, figsize=(15, 9), sharey=False)
+fig, axes = plt.subplots(2, 3, figsize=(15, 9), sharey=True)
 axes = axes.flatten()
 
 for ax, (gage_id, color) in zip(axes, zip(gages, COLORS)):

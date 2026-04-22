@@ -22,9 +22,22 @@ LAGS = {
     '3 Month': FEAT / 'data_lag_3mo.csv',
     '6 Month': FEAT / 'data_lag_6mo.csv',
     '1 Year':  FEAT / 'data_lag_1yr.csv',
+    '5 Year':  FEAT / 'data_lag_5yr.csv',
 }
 LAG_ORDER  = list(LAGS.keys())
-LAG_COLORS = ['#555555', '#4E79A7', '#F28E2B', '#E15759']
+LAG_COLORS = ['#555555', '#4E79A7', '#F28E2B', '#E15759', '#76B7B2']
+
+# Column used as ΔWTE predictor for each lag period.
+# Lagged periods use the pre-shifted column so x(t) predicts y(t+lag).
+LAG_X_COL = {
+    'No Lag':  'delta_wte',
+    '3 Month': 'delta_wte_lag_3_months',
+    '6 Month': 'delta_wte_lag_6_months',
+    '1 Year':  'delta_wte_lag_1_year',
+    '5 Year':  'delta_wte_lag_5_years',
+}
+
+MIN_OBS = 20   # matches config.yaml well_quality.min_measurements
 
 GAGE_NAME_MAP = {
     '10126000': 'Bear River\nNr Corinne',
@@ -47,7 +60,7 @@ def _mi(x, y, n_bins=20):
     return mutual_info_score(xd, yd)
 
 def _reg(x, y):
-    if len(x) < 3 or x.std() == 0:
+    if len(x) < MIN_OBS or x.std() == 0:
         return dict(slope=np.nan, r2=np.nan, p=np.nan, n=len(x))
     slope, intercept, r, p, _ = stats.linregress(x, y)
     return dict(slope=slope, r2=r**2, p=p, n=len(x))
@@ -58,15 +71,16 @@ gage_records = []
 pair_records = []
 
 for lag_label, path in LAGS.items():
+    x_col = LAG_X_COL[lag_label]
     df = pd.read_csv(path)
     df['gage_id'] = df['gage_id'].astype(str)
-    df = df.dropna(subset=['delta_wte', 'delta_q'])
-    # Remove outlier for gage 10163000 (|delta_wte| > 1400 ft)
-    df = df[~((df['gage_id'] == '10163000') & (df['delta_wte'].abs() > 1400))]
+    df = df.dropna(subset=[x_col, 'delta_q'])
+    # Remove outlier for gage 10163000 (|ΔWTE predictor| > 1400 ft)
+    df = df[~((df['gage_id'] == '10163000') & (df[x_col].abs() > 1400))]
 
     for gage_id, g in df.groupby('gage_id'):
         gage_name = GAGE_NAME_MAP.get(gage_id, gage_id)
-        x = g['delta_wte'].values
+        x = g[x_col].values
         y = g['delta_q'].values
         reg = _reg(x, y)
         mi  = _mi(x, y)
@@ -77,11 +91,13 @@ for lag_label, path in LAGS.items():
             mi=mi
         ))
 
-        # per-pair stats
+        # per-pair stats (only wells meeting MIN_OBS)
         for well_id, w in g.groupby('well_id'):
-            wx, wy = w['delta_wte'].values, w['delta_q'].values
+            wx, wy = w[x_col].values, w['delta_q'].values
+            if len(wx) < MIN_OBS:
+                continue
             wreg = _reg(wx, wy)
-            wmi  = _mi(wx, wy) if len(wx) >= 5 else np.nan
+            wmi  = _mi(wx, wy)
             pair_records.append(dict(
                 lag=lag_label, gage_id=gage_id, gage_name=gage_name,
                 well_id=well_id, **{f'{k}': wreg[k] for k in ('slope','r2','p')},
@@ -169,7 +185,7 @@ for ax, gage_id in zip(axes, gages):
             ax.text(j, med + 0.003, f'{med:.3f}', ha='center', va='bottom', fontsize=7)
 
     ax.set_xticks(range(len(LAG_ORDER)))
-    ax.set_xticklabels(['No\nLag', '3mo', '6mo', '1yr'], fontsize=8)
+    ax.set_xticklabels(['No\nLag', '3mo', '6mo', '1yr', '5yr'], fontsize=8)
     ax.set_title(gage_name, fontsize=9, fontweight='bold')
     ax.set_xlabel('Lag', fontsize=8)
     ax.grid(axis='y', alpha=0.35)
@@ -182,12 +198,17 @@ fig.savefig(OUT_DIR / 'lag_r2_violin_by_gage.png', dpi=160, bbox_inches='tight')
 plt.close()
 print("  Fig 2 saved: lag_r2_violin_by_gage.png")
 
-# ── Figure 3: delta R² heatmap (lag - no_lag) ───────────────────────────────
-fig, axes = plt.subplots(1, 3, figsize=(13, max(4, n_gages * 0.55 + 1.5)))
+# ── Figure 3: delta R² and MI (lag - no_lag), one subplot per lag ────────────
+lag_comparisons = LAG_ORDER[1:]   # ['3 Month', '6 Month', '1 Year', '5 Year']
+n_comp = len(lag_comparisons)
+fig, axes = plt.subplots(1, n_comp, figsize=(4.5 * n_comp, max(4, n_gages * 0.55 + 1.5)))
+if n_comp == 1:
+    axes = [axes]
 
-for ax, lag in zip(axes, LAG_ORDER[1:]):   # skip no-lag itself
-    no_lag_sub = gage_df[gage_df['lag'] == 'No Lag'].set_index('gage_id')
-    lag_sub    = gage_df[gage_df['lag'] == lag].set_index('gage_id')
+no_lag_sub = gage_df[gage_df['lag'] == 'No Lag'].set_index('gage_id')
+
+for ax, lag in zip(axes, lag_comparisons):
+    lag_sub = gage_df[gage_df['lag'] == lag].set_index('gage_id')
 
     delta_r2 = []
     delta_mi = []
@@ -213,7 +234,7 @@ for ax, lag in zip(axes, LAG_ORDER[1:]):   # skip no-lag itself
     ax.grid(axis='x', alpha=0.35)
     ax.set_axisbelow(True)
 
-# Unify x-axis scale across all three subplots
+# Unify x-axis scale across all subplots
 all_xlims = [ax.get_xlim() for ax in axes]
 x_min = min(lim[0] for lim in all_xlims)
 x_max = max(lim[1] for lim in all_xlims)
@@ -271,7 +292,85 @@ fig.savefig(OUT_DIR / 'lag_pct_better_heatmap.png', dpi=160, bbox_inches='tight'
 plt.close()
 print("  Fig 4 saved: lag_pct_better_heatmap.png")
 
-# ── Print summary table ───────────────────────────────────────────────────────
+# ── Figure 5: scatter plots ΔWTE vs ΔQ, one panel per lag ───────────────────
+scatter_dir = OUT_DIR / 'scatter_by_lag'
+scatter_dir.mkdir(exist_ok=True)
+
+# Pre-load all lag data (using correct x column per lag) and compute axis limits
+all_sc = {}
+for lag_label, path in LAGS.items():
+    x_col = LAG_X_COL[lag_label]
+    df_sc = pd.read_csv(path)
+    df_sc['gage_id'] = df_sc['gage_id'].astype(str)
+    df_sc = df_sc.dropna(subset=[x_col, 'delta_q'])
+    df_sc = df_sc[~((df_sc['gage_id'] == '10163000') & (df_sc[x_col].abs() > 1400))]
+    all_sc[lag_label] = (df_sc, x_col)
+
+all_gages_sc = sorted(set(g for df, _ in all_sc.values() for g in df['gage_id'].unique()))
+
+# Global x/y limits per gage (across all lags, using each lag's correct x column)
+gage_xlim = {}
+gage_ylim = {}
+for gage_id in all_gages_sc:
+    all_x, all_y = [], []
+    for df_sc, x_col in all_sc.values():
+        sub = df_sc[df_sc['gage_id'] == gage_id]
+        if len(sub):
+            all_x.extend(sub[x_col].values)
+            all_y.extend(sub['delta_q'].values)
+    if all_x:
+        xpad = (max(all_x) - min(all_x)) * 0.05 or 1
+        ypad = (max(all_y) - min(all_y)) * 0.05 or 1
+        gage_xlim[gage_id] = (min(all_x) - xpad, max(all_x) + xpad)
+        gage_ylim[gage_id] = (min(all_y) - ypad, max(all_y) + ypad)
+
+for lag_label, (df_sc, x_col) in all_sc.items():
+    n_g = len(all_gages_sc)
+    fig, axes = plt.subplots(1, n_g, figsize=(4.5 * n_g, 4.5))
+    if n_g == 1:
+        axes = [axes]
+
+    for ax, gage_id in zip(axes, all_gages_sc):
+        sub = df_sc[df_sc['gage_id'] == gage_id]
+        gage_name_short = GAGE_NAME_MAP.get(gage_id, gage_id).replace('\n', ' ')
+
+        if len(sub) == 0:
+            ax.set_visible(False)
+            continue
+
+        x, y = sub[x_col].values, sub['delta_q'].values
+        ax.scatter(x, y, s=6, alpha=0.35, color='steelblue', rasterized=True)
+
+        if len(x) >= MIN_OBS and x.std() > 0:
+            slope, intercept, r, p, _ = stats.linregress(x, y)
+            xl = np.array(gage_xlim.get(gage_id, (x.min(), x.max())))
+            ax.plot(xl, slope * xl + intercept, color='red', linewidth=1.5)
+            ax.text(0.04, 0.97,
+                    f'slope={slope:.3f}\nR²={r**2:.3f}\np={p:.3e}',
+                    transform=ax.transAxes, fontsize=7.5,
+                    va='top', ha='left',
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.7))
+
+        xlabel = 'ΔWTE (ft)' if lag_label == 'No Lag' else f'ΔWTE lag {lag_label} (ft)'
+        ax.set_xlabel(xlabel, fontsize=9)
+        ax.set_ylabel('ΔQ (cfs)', fontsize=9)
+        ax.set_title(f'{gage_name_short}\n(n={len(sub):,})', fontsize=9)
+        ax.set_xlim(gage_xlim.get(gage_id))
+        ax.set_ylim(gage_ylim.get(gage_id))
+        ax.axhline(0, color='black', linewidth=0.4, alpha=0.5)
+        ax.axvline(0, color='black', linewidth=0.4, alpha=0.5)
+        ax.grid(alpha=0.25)
+
+    fig.suptitle(f'ΔWTE vs ΔQ Scatter — {lag_label}', fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    safe = lag_label.lower().replace(' ', '_')
+    fig.savefig(scatter_dir / f'scatter_{safe}.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"  Scatter saved: scatter_{safe}.png")
+
+print("  Fig 5 (scatter plots) saved to scatter_by_lag/")
+
+# ── Summary tables ────────────────────────────────────────────────────────────
 print("\n" + "="*70)
 print("LAG COMPARISON SUMMARY (Gage Level)")
 print("="*70)
@@ -283,5 +382,24 @@ print("\nR²:")
 print(pivot_r2.to_string())
 print("\nMutual Information:")
 print(pivot_mi.to_string())
+
+# Export to CSV
+pivot_r2.to_csv(OUT_CSV / 'lag_comparison_r2_table.csv')
+pivot_mi.to_csv(OUT_CSV / 'lag_comparison_mi_table.csv')
+
+# Combined wide table
+combined = gage_df.copy()
+combined['gage_short'] = combined['gage_id'].map(
+    lambda g: GAGE_NAME_MAP.get(g, g).replace('\n', ' '))
+wide = combined.pivot_table(
+    index=['gage_id', 'gage_short'],
+    columns='lag',
+    values=['r2', 'mi', 'n_obs', 'n_wells']
+)[['r2', 'mi', 'n_obs', 'n_wells']].round(4)
+wide.to_csv(OUT_CSV / 'lag_comparison_full_table.csv')
+print(f"\nTables saved to:")
+print(f"  {OUT_CSV / 'lag_comparison_r2_table.csv'}")
+print(f"  {OUT_CSV / 'lag_comparison_mi_table.csv'}")
+print(f"  {OUT_CSV / 'lag_comparison_full_table.csv'}")
 print(f"\nAll figures saved to: {OUT_DIR}")
 print(f"CSVs saved to: {OUT_CSV}")
