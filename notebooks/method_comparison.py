@@ -65,6 +65,18 @@ METHOD_COLORS = plt.cm.tab10(np.linspace(0, 1, len(METHODS)))
 # ── 读入 delta 数据，计算每方法×gage 的 pooled 回归 ───────────────────────────
 from scipy.stats import linregress
 
+# Consistent outlier removal: IQR×3 per gage on the WTE delta column only.
+# Applied to all delta-based methods. Std anomaly is exempt (already in z-score
+# space with its own |z|≤4 truncation).
+# IQR×3 is preferred over 3-std: robust to skewed distributions and not inflated
+# by the very outliers it is trying to remove.
+def iqr_mask(series, k=3.0):
+    q1, q3 = series.quantile(0.25), series.quantile(0.75)
+    iqr = q3 - q1
+    if iqr == 0:
+        return pd.Series(True, index=series.index)
+    return (series >= q1 - k * iqr) & (series <= q3 + k * iqr)
+
 print("Loading delta data and computing pooled regressions...")
 all_dfs   = {}   # label → delta DataFrame（供斜率分布图用，沿用 per-well 回归文件）
 summary_rows = []
@@ -75,6 +87,16 @@ for (label, path, xcol, ycol) in METHODS:
         continue
     df = pd.read_csv(path)
     df["gage_short"] = df["gage_name"].map(GAGE_SHORT)
+
+    # Apply 3-std outlier removal on WTE column for delta-based methods.
+    # Skip for Std anomaly (z-score data, filtered separately in its own script).
+    if xcol != "z_wte":
+        before = len(df)
+        mask = df.groupby("gage_id")[xcol].transform(iqr_mask)
+        df = df[mask].copy()
+        removed = before - len(df)
+        if removed:
+            print(f"    outlier removal (IQR×3 on {xcol}): {removed} rows removed")
 
     # 同时保留用于斜率分布的 per-well 回归（沿用旧文件）
     reg_path = path.parent / path.name.replace("data_", "regression_").replace(
