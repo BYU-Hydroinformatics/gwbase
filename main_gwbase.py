@@ -64,26 +64,23 @@ def load_config(config_path: str = 'config.yaml') -> dict:
 
 def setup_directories(base_dir: str, output_dir: str = None) -> dict:
     """Set up directory structure for GWBASE analysis."""
-    from datetime import datetime
-    
     if output_dir is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.join(base_dir, 'reports', f'output_{timestamp}')
+        output_dir = os.path.join(base_dir, 'result')
     else:
         # Use provided output directory (can be relative or absolute)
         if not os.path.isabs(output_dir):
             output_dir = os.path.join(base_dir, output_dir)
-    
+
     dirs = {
-        'raw': os.path.join(base_dir, 'data', 'raw'),
+        'raw':       os.path.join(base_dir, 'data', 'raw'),
         'processed': os.path.join(output_dir, 'processed'),
-        'features': os.path.join(output_dir, 'features'),
-        'figures': os.path.join(output_dir, 'figures'),
+        'features':  os.path.join(output_dir, 'features'),
+        'figures':   os.path.join(output_dir, 'figures'),
     }
 
     for dir_path in dirs.values():
         os.makedirs(dir_path, exist_ok=True)
-    
+
     print(f"Output directory: {output_dir}")
 
     return dirs
