@@ -12,8 +12,9 @@ import pymannkendall as mk
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-OUT_DIR = BASE / "results/figures/senslope"
-OUT_CSV = BASE / "results/features"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "analysis" / "senslope"
+OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 GAGE_SHORT = {
@@ -33,7 +34,7 @@ GAGE_SHORT = {
 
 # ── 1. Streamflow Sen's Slope (bfd=1) ────────────────────────────────────────
 print("Computing Sen's slope for bfd=1 streamflow …")
-sf = pd.read_csv(BASE / "results/processed/streamflow_monthly_bfd.csv",
+sf = pd.read_csv(RESULTS / "processed" / "streamflow_monthly_bfd.csv",
                  parse_dates=['date'])
 sf['gage_id'] = sf['gage_id'].astype(str)
 bfd1 = sf[sf['bfd'] == 1].copy()

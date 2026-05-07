@@ -26,8 +26,8 @@ from scipy.stats import linregress, spearmanr, pearsonr
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-ANN_DIR = RESULTS / "annual_delta"
+RESULTS = BASE / "result"
+ANN_DIR = RESULTS / "delta_methods" / "annual"
 
 # Output directories
 FEAT_DIR  = ANN_DIR / "features"

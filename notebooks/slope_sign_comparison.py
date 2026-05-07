@@ -14,11 +14,12 @@ from scipy.stats import linregress, mannwhitneyu
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT     = RESULTS / "figures" / "slope_sign_comparison.png"
+RESULTS = BASE / "result"
+(RESULTS / "analysis" / "slope_stats").mkdir(parents=True, exist_ok=True)
+OUT     = RESULTS / "analysis" / "slope_stats" / "slope_sign_comparison.png"
 
 # ── Load data ────────────────────────────────────────────────────────────────
-r2_df  = pd.read_csv(RESULTS / "figures" / "top10_wells_scatter" / "tables" / "top10_by_r2.csv")
+r2_df  = pd.read_csv(RESULTS / "analysis" / "scatter" / "top10" / "tables" / "top10_by_r2.csv")
 data   = pd.read_csv(RESULTS / "features" / "data_with_deltas.csv", parse_dates=["date"])
 pchip  = pd.read_csv(RESULTS / "processed" / "well_pchip_monthly.csv", parse_dates=["date"])
 

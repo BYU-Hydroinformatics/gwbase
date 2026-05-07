@@ -27,8 +27,9 @@ from pathlib import Path
 MAX_LAG   = 60   # months
 MIN_OBS   = 36   # minimum pair observations required
 BASE      = Path(__file__).parent.parent
-OUT_FIG   = BASE / "results/figures/ccf_analysis"
-OUT_CSV   = BASE / "results/features"
+RESULTS   = BASE / "result"
+OUT_FIG   = RESULTS / "analysis" / "ccf"
+OUT_CSV   = RESULTS / "features"
 OUT_FIG.mkdir(parents=True, exist_ok=True)
 
 GAGE_NAME = {
@@ -50,7 +51,7 @@ GAGE_FULL = {
 
 # ── load data ─────────────────────────────────────────────────────────────────
 print("Loading data …")
-df = pd.read_csv(BASE / "results/features/data_with_deltas.csv", parse_dates=['date'])
+df = pd.read_csv(RESULTS / "features" / "data_with_deltas.csv", parse_dates=['date'])
 df['gage_id'] = df['gage_id'].astype(str)
 df = df.dropna(subset=['delta_wte', 'delta_q'])
 df = df.sort_values(['gage_id', 'well_id', 'date'])

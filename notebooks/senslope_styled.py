@@ -12,8 +12,9 @@ import pymannkendall as mk
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-OUT_DIR = BASE / "results/figures/senslope_styled"
-OUT_CSV = BASE / "results/features"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "analysis" / "senslope"
+OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 MIN_OBS   = 20

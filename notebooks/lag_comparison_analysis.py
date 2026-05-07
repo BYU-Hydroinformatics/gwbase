@@ -12,9 +12,10 @@ from sklearn.metrics import mutual_info_score
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-FEAT    = BASE / "results/features"
-OUT_DIR = BASE / "results/figures/lag_comparison"
-OUT_CSV = BASE / "results/features"
+RESULTS = BASE / "result"
+FEAT    = RESULTS / "features"
+OUT_DIR = RESULTS / "analysis" / "lag_comparison"
+OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 LAGS = {

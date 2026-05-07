@@ -23,8 +23,8 @@ from pathlib import Path
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE    = Path(__file__).parent.parent
 DATA    = BASE / "data"
-RESULTS = BASE / "results"
-OUT     = RESULTS / "figures" / "terminal_gage_maps_r2"
+RESULTS = BASE / "result"
+OUT     = RESULTS / "analysis" / "maps"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ── Colors ────────────────────────────────────────────────────────────────────
@@ -53,11 +53,11 @@ lakes     = gpd.read_file(DATA / "raw/hydrography/lake.shp")
 wells_gdf = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
 
 all_gages = pd.read_csv(DATA    / "raw/hydrography/gsl_nwm_gage.csv")
-term_df   = pd.read_csv(RESULTS / "processed/terminal_gages.csv")
-upstream  = pd.read_csv(RESULTS / "processed/terminal_gage_upstream_catchments.csv")
+term_df   = pd.read_csv(RESULTS / "processed" / "terminal_gages.csv")
+upstream  = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
 
 # R² per well from Step 9
-r2_df = pd.read_csv(RESULTS / "features/regression_by_well.csv")
+r2_df = pd.read_csv(RESULTS / "features" / "regression_by_well.csv")
 r2_df["well_id_str"] = r2_df["well_id"].astype(str)
 # Fixed colormap range 0–0.5 for consistent scale across all gage maps
 R2_MIN = r2_df["r_squared"].min()

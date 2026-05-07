@@ -13,13 +13,14 @@ import matplotlib.ticker as ticker
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT     = RESULTS / "figures" / "slope_distribution_by_gage.png"
+RESULTS = BASE / "result"
+(RESULTS / "analysis" / "slope_stats").mkdir(parents=True, exist_ok=True)
+OUT     = RESULTS / "analysis" / "slope_stats" / "slope_distribution_by_gage.png"
 
 # ── Load data ────────────────────────────────────────────────────────────────
 reg   = pd.read_csv(RESULTS / "features" / "regression_by_well.csv")
-top_r2 = pd.read_csv(RESULTS / "figures" / "top10_wells_scatter" / "tables" / "top10_by_r2.csv")
-top_mi = pd.read_csv(RESULTS / "figures" / "top10_wells_scatter" / "tables" / "top10_by_mi.csv")
+top_r2 = pd.read_csv(RESULTS / "analysis" / "scatter" / "top10" / "tables" / "top10_by_r2.csv")
+top_mi = pd.read_csv(RESULTS / "analysis" / "scatter" / "top10" / "tables" / "top10_by_mi.csv")
 
 reg["well_id"]    = reg["well_id"].astype(str)
 reg["gage_id"]    = reg["gage_id"].astype(str)

@@ -24,8 +24,8 @@ from pathlib import Path
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE    = Path(__file__).parent.parent
 DATA    = BASE / "data"
-RESULTS = BASE / "results"
-OUT     = RESULTS / "figures" / "terminal_gage_maps_mi"
+RESULTS = BASE / "result"
+OUT     = RESULTS / "analysis" / "maps"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ── Colors ────────────────────────────────────────────────────────────────────
@@ -54,11 +54,11 @@ lakes     = gpd.read_file(DATA / "raw/hydrography/lake.shp")
 wells_gdf = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
 
 all_gages = pd.read_csv(DATA    / "raw/hydrography/gsl_nwm_gage.csv")
-term_df   = pd.read_csv(RESULTS / "processed/terminal_gages.csv")
-upstream  = pd.read_csv(RESULTS / "processed/terminal_gage_upstream_catchments.csv")
+term_df   = pd.read_csv(RESULTS / "processed" / "terminal_gages.csv")
+upstream  = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
 
 # MI per well
-mi_df = pd.read_csv(RESULTS / "features/mi_analysis.csv")
+mi_df = pd.read_csv(RESULTS / "features" / "mi_analysis.csv")
 mi_df["well_id_str"] = mi_df["well_id"].astype(str)
 
 # Fixed colorbar range 0–1.5 (covers global MI max ~1.46)

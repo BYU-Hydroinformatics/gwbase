@@ -12,13 +12,13 @@ import matplotlib.dates as mdates
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_DIR = RESULTS / "figures" / "negative_slope_timeseries"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "analysis" / "slope_stats"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Load tables ──────────────────────────────────────────────────────────────
-r2_df = pd.read_csv(RESULTS / "figures" / "top10_wells_scatter" / "tables" / "top10_by_r2.csv")
-mi_df = pd.read_csv(RESULTS / "figures" / "top10_wells_scatter" / "tables" / "top10_by_mi.csv")
+r2_df = pd.read_csv(RESULTS / "analysis" / "scatter" / "top10" / "tables" / "top10_by_r2.csv")
+mi_df = pd.read_csv(RESULTS / "analysis" / "scatter" / "top10" / "tables" / "top10_by_mi.csv")
 
 neg_r2 = r2_df[r2_df["slope"] < 0][["gage_id", "gage_name", "well_id", "slope", "r_squared"]].copy()
 neg_mi = mi_df[mi_df["slope_reg"] < 0][["gage_id", "gage_name", "well_id", "slope_reg", "mi"]].copy()
@@ -55,6 +55,7 @@ raw   = pd.read_csv(RESULTS / "processed" / "well_ts_cleaned.csv",
 pchip = pd.read_csv(RESULTS / "processed" / "well_pchip_monthly.csv",
                     usecols=["well_id", "date", "wte"],
                     parse_dates=["date"])
+
 raw["well_id"]   = raw["well_id"].astype(str)
 pchip["well_id"] = pchip["well_id"].astype(str)
 

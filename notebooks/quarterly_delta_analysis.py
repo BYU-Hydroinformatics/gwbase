@@ -33,8 +33,8 @@ from scipy.stats import linregress, pearsonr, spearmanr
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_DIR = RESULTS / "quarterly_delta"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "delta_methods" / "quarterly_yoy"
 
 FEAT_DIR = OUT_DIR / "features"
 FIG_DIR  = OUT_DIR / "figures"

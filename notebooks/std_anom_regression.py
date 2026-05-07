@@ -26,8 +26,8 @@ from scipy.stats import linregress, pearsonr, spearmanr
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_DIR = RESULTS / "std_anom_regression"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "delta_methods" / "std_anomaly"
 
 FEAT_DIR = OUT_DIR / "features"
 FIG_DIR  = OUT_DIR / "figures"

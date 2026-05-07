@@ -11,8 +11,9 @@ import numpy as np
 from pathlib import Path
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-BASE = Path(__file__).parent.parent
-DATA = BASE / "data"
+BASE    = Path(__file__).parent.parent
+DATA    = BASE / "data"
+RESULTS = BASE / "result"
 
 # ── Load geodata ───────────────────────────────────────────────────────────────
 print("Loading geodata...")
@@ -24,8 +25,8 @@ wells    = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
 
 # ── Load tabular data ──────────────────────────────────────────────────────────
 all_gages = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")   # 78 gages
-term_df   = pd.read_csv(DATA / "processed/terminal_gages.csv")        # terminal gages
-upstream  = pd.read_csv(DATA / "processed/terminal_gage_upstream_catchments.csv")
+term_df   = pd.read_csv(RESULTS / "processed" / "terminal_gages.csv")        # terminal gages
+upstream  = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
 # columns: Gage_ID, Gage_Name, Terminal_Catchment_ID, Upstream_Catchment_ID
 
 print(f"  Basin polys: {len(basin)}")
@@ -200,7 +201,8 @@ ax.set_title(
 ax.set_axis_off()
 plt.tight_layout()
 
-out = BASE / "notebooks/terminal_gages_map.png"
+(RESULTS / "analysis" / "maps").mkdir(parents=True, exist_ok=True)
+out = RESULTS / "analysis" / "maps" / "terminal_gages_map.png"
 plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
 print(f"Saved → {out}")
 plt.show()

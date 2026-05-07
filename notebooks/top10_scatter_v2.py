@@ -17,17 +17,17 @@ from pathlib import Path
 import math
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
+RESULTS = BASE / "result"
 
 # Output dirs (new, preserving originals)
 DIRS = {
     "r2": {
-        "per_well":     RESULTS / "figures" / "top10_wells_scatter" / "r2_per_well",
-        "per_well_fit": RESULTS / "figures" / "top10_wells_scatter" / "r2_per_well_fit",
+        "per_well":     RESULTS / "analysis" / "scatter" / "top10" / "r2_per_well",
+        "per_well_fit": RESULTS / "analysis" / "scatter" / "top10" / "r2_per_well_fit",
     },
     "mi": {
-        "per_well":     RESULTS / "figures" / "top10_wells_scatter" / "mi_per_well",
-        "per_well_fit": RESULTS / "figures" / "top10_wells_scatter" / "mi_per_well_fit",
+        "per_well":     RESULTS / "analysis" / "scatter" / "top10" / "mi_per_well",
+        "per_well_fit": RESULTS / "analysis" / "scatter" / "top10" / "mi_per_well_fit",
     },
 }
 for metric_dirs in DIRS.values():
@@ -245,8 +245,8 @@ for gage_id, grp in mi_df.groupby("gage_id"):
                                      DIRS["mi"]["per_well_fit"])
 
 # ── Summary tables ────────────────────────────────────────────────────────────
-TAB_DIR = RESULTS / "figures" / "top10_wells_scatter" / "tables"
-TAB_DIR.mkdir(exist_ok=True)
+TAB_DIR = RESULTS / "analysis" / "scatter" / "top10" / "tables"
+TAB_DIR.mkdir(parents=True, exist_ok=True)
 
 # Top-10 by R²: full regression stats, sorted rank within each gage
 r2_tables = []

@@ -13,9 +13,10 @@ import matplotlib.gridspec as gridspec
 from pathlib import Path
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-BASE = Path(__file__).parent.parent
-DATA = BASE / "data"
-OUT  = BASE / "results" / "figures" / "terminal_gage_maps"
+BASE    = Path(__file__).parent.parent
+DATA    = BASE / "data"
+RESULTS = BASE / "result"
+OUT     = RESULTS / "analysis" / "maps"
 OUT.mkdir(parents=True, exist_ok=True)
 
 GAGE_ID       = 10153100
@@ -48,9 +49,8 @@ lakes_3857 = lakes.to_crs(TARGET_CRS)
 wells_gdf = gpd.read_file(DATA / "raw/hydrography/well_shp.shp").to_crs(TARGET_CRS)
 
 all_gages = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")
-RESULTS = BASE / "results"
-term_df   = pd.read_csv(RESULTS / "processed/terminal_gages.csv")
-upstream  = pd.read_csv(RESULTS / "processed/terminal_gage_upstream_catchments.csv")
+term_df   = pd.read_csv(RESULTS / "processed" / "terminal_gages.csv")
+upstream  = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
 
 catchment["linkno_int"] = catchment["linkno"].astype(float).astype(int)
 

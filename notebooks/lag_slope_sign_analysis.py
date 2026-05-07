@@ -18,8 +18,8 @@ from scipy.stats import linregress
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_DIR = RESULTS / "figures" / "lag_slope_sign"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "analysis" / "lag_slope_sign"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 MIN_OBS = 20
@@ -37,11 +37,11 @@ GAGEID_TO_NAME = {"10126000": "BEAR RIVER NEAR CORINNE - UT",
 
 # ── Load all lag datasets ────────────────────────────────────────────────────
 LAG_SPECS = {
-    "No Lag":  ("results/features/data_with_deltas.csv", "delta_wte"),
-    "3 Month": ("results/features/data_lag_3mo.csv",     "delta_wte_lag_3_months"),
-    "6 Month": ("results/features/data_lag_6mo.csv",     "delta_wte_lag_6_months"),
-    "1 Year":  ("results/features/data_lag_1yr.csv",     "delta_wte_lag_1_year"),
-    "5 Year":  ("results/features/data_lag_5yr.csv",     "delta_wte_lag_5_years"),
+    "No Lag":  ("result/features/data_with_deltas.csv", "delta_wte"),
+    "3 Month": ("result/features/data_lag_3mo.csv",     "delta_wte_lag_3_months"),
+    "6 Month": ("result/features/data_lag_6mo.csv",     "delta_wte_lag_6_months"),
+    "1 Year":  ("result/features/data_lag_1yr.csv",     "delta_wte_lag_1_year"),
+    "5 Year":  ("result/features/data_lag_5yr.csv",     "delta_wte_lag_5_years"),
 }
 LAG_ORDER = ["No Lag", "3 Month", "6 Month", "1 Year", "5 Year"]
 
@@ -86,6 +86,7 @@ for lag_name in LAG_ORDER:
     # already set from gage_name column in data
 
 result.to_csv(RESULTS / "features" / "lag_slope_by_well.csv", index=False)
+
 print(f"Saved lag_slope_by_well.csv  ({len(result)} rows)")
 
 # ── Summary: neg/pos counts per gage per lag ─────────────────────────────────

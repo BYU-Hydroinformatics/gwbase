@@ -19,8 +19,8 @@ import matplotlib.colors as mcolors
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_DIR = RESULTS / "method_comparison"
+RESULTS = BASE / "result"
+OUT_DIR = RESULTS / "analysis" / "method_comparison"
 FIG_DIR = OUT_DIR / "figures"
 DIST_DIR = FIG_DIR / "slope_distributions"
 for d in [OUT_DIR, FIG_DIR, DIST_DIR]:
@@ -44,32 +44,20 @@ METHODS = [
      RESULTS / "features" / "data_with_deltas.csv",
      "delta_wte", "delta_q"),
     ("Annual delta\n(YoY)",
-     RESULTS / "annual_delta" / "features" / "data_annual_deltas.csv",
+     RESULTS / "delta_methods" / "annual" / "features" / "data_annual_deltas.csv",
      "delta_wte_ann", "delta_q_ann"),
     ("Same-quarter\nYoY delta",
-     RESULTS / "quarterly_delta" / "features" / "data_quarterly_deltas.csv",
+     RESULTS / "delta_methods" / "quarterly_yoy" / "features" / "data_quarterly_deltas.csv",
      "delta_wte_qtr", "delta_q_qtr"),
-    ("Consecutive\nquarter delta",
-     RESULTS / "quarterly_consec_delta" / "features" / "data_quarterly_consec_deltas.csv",
-     "delta_wte", "delta_q"),
     ("Deseason qtr\nconsec delta",
-     RESULTS / "deseason_qtr_delta" / "features" / "data_deseason_qtr_deltas.csv",
-     "delta_wte", "delta_q"),
-    ("Monthly anomaly\ndelta",
-     RESULTS / "monthly_anom_delta" / "features" / "data_monthly_anom_deltas.csv",
+     RESULTS / "delta_methods" / "deseason_qtr" / "features" / "data_deseason_qtr_deltas.csv",
      "delta_wte", "delta_q"),
     ("Rolling 12m\nannual diff",
-     RESULTS / "rolling12m_delta" / "features" / "data_rolling12m_deltas.csv",
-     "delta_wte", "delta_q"),
-    ("STL deseason\nYoY delta",
-     RESULTS / "stl_delta" / "features" / "data_stl_deltas.csv",
+     RESULTS / "delta_methods" / "rolling12m" / "features" / "data_rolling12m_deltas.csv",
      "delta_wte", "delta_q"),
     ("Std anomaly\nregression",
-     RESULTS / "std_anom_regression" / "features" / "data_std_anom.csv",
+     RESULTS / "delta_methods" / "std_anomaly" / "features" / "data_std_anom.csv",
      "z_wte", "z_q"),
-    ("Wavelet\ninterannual",
-     RESULTS / "wavelet_delta" / "features" / "data_wavelet_deltas.csv",
-     "delta_wte", "delta_q"),
 ]
 
 METHOD_COLORS = plt.cm.tab10(np.linspace(0, 1, len(METHODS)))

@@ -20,8 +20,8 @@ from scipy.stats import linregress
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-FIG_DIR = RESULTS / "figures" / "top_percentile_scatter"
+RESULTS = BASE / "result"
+FIG_DIR = RESULTS / "analysis" / "scatter" / "top_percentile"
 TAB_DIR = FIG_DIR / "tables"
 TAB_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -43,6 +43,7 @@ data  = pd.read_csv(RESULTS / "features" / "data_with_deltas.csv")
 data["date"] = pd.to_datetime(data["date"])
 r2_df = pd.read_csv(RESULTS / "features" / "regression_by_well.csv")
 mi_df = pd.read_csv(RESULTS / "features" / "mi_analysis.csv")
+
 mi_df = mi_df[mi_df["mi"].notna()]
 
 gage_names = (

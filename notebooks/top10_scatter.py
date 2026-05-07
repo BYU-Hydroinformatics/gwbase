@@ -16,9 +16,9 @@ from scipy.stats import linregress
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "results"
-OUT_R2  = RESULTS / "figures" / "top10_wells_scatter" / "r2"
-OUT_MI  = RESULTS / "figures" / "top10_wells_scatter" / "mi"
+RESULTS = BASE / "result"
+OUT_R2  = RESULTS / "analysis" / "scatter" / "top10" / "r2"
+OUT_MI  = RESULTS / "analysis" / "scatter" / "top10" / "mi"
 OUT_R2.mkdir(parents=True, exist_ok=True)
 OUT_MI.mkdir(parents=True, exist_ok=True)
 
