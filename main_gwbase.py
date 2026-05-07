@@ -442,7 +442,7 @@ def run_step_8_delta_metrics(
     data_with_deltas.to_csv(os.path.join(output_dir, 'data_with_deltas.csv'), index=False)
 
     # Create lag versions
-    for lag, unit in [(1, 'years'), (3, 'months'), (6, 'months')]:
+    for lag, unit in [(1, 'years'), (5, 'years'), (3, 'months'), (6, 'months')]:
         lag_data = gwbase.create_lag_analysis(data_with_deltas, lag, unit)
         suffix = f'{lag}yr' if unit == 'years' else f'{lag}mo'
         lag_data.to_csv(os.path.join(output_dir, f'data_lag_{suffix}.csv'), index=False)
