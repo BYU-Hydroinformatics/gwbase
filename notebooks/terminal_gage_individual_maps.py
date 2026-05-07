@@ -24,7 +24,7 @@ from pathlib import Path
 BASE    = Path(__file__).parent.parent
 DATA    = BASE / "data"
 RESULTS = BASE / "result"
-OUT     = RESULTS / "analysis" / "maps"
+OUT     = RESULTS / "analysis" / "maps" / "highlight_r2"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ── Colors ────────────────────────────────────────────────────────────────────

@@ -201,8 +201,8 @@ ax.set_title(
 ax.set_axis_off()
 plt.tight_layout()
 
-(RESULTS / "analysis" / "maps").mkdir(parents=True, exist_ok=True)
-out = RESULTS / "analysis" / "maps" / "terminal_gages_map.png"
+(RESULTS / "analysis" / "maps" / "overview").mkdir(parents=True, exist_ok=True)
+out = RESULTS / "analysis" / "maps" / "overview" / "terminal_gages_map.png"
 plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
 print(f"Saved → {out}")
 plt.show()
