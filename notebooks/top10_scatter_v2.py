@@ -17,7 +17,7 @@ from pathlib import Path
 import math
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 
 # Output dirs (new, preserving originals)
 DIRS = {

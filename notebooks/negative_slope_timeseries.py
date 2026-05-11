@@ -12,7 +12,7 @@ import matplotlib.dates as mdates
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 OUT_DIR = RESULTS / "analysis" / "slope_stats"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 

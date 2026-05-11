@@ -13,7 +13,7 @@ from pathlib import Path
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE    = Path(__file__).parent.parent
 DATA    = BASE / "data"
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 
 # ── Load geodata ───────────────────────────────────────────────────────────────
 print("Loading geodata...")

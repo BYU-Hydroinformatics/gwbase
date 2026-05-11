@@ -20,7 +20,7 @@ import matplotlib.colors as mcolors
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 OUT_DIR = RESULTS / "analysis" / "method_comparison"
 FIG_DIR = OUT_DIR / "figures"
 DIST_DIR = FIG_DIR / "slope_distributions"

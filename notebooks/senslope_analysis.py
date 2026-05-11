@@ -12,7 +12,7 @@ import pymannkendall as mk
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 OUT_DIR = RESULTS / "analysis" / "senslope"
 OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)

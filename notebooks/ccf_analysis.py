@@ -27,7 +27,7 @@ from pathlib import Path
 MAX_LAG   = 60   # months
 MIN_OBS   = 36   # minimum pair observations required
 BASE      = Path(__file__).parent.parent
-RESULTS   = BASE / "result"
+RESULTS   = BASE / "results"
 OUT_FIG   = RESULTS / "analysis" / "ccf"
 OUT_CSV   = RESULTS / "features"
 OUT_FIG.mkdir(parents=True, exist_ok=True)

@@ -13,7 +13,7 @@ import matplotlib.ticker as ticker
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 (RESULTS / "analysis" / "slope_stats").mkdir(parents=True, exist_ok=True)
 OUT     = RESULTS / "analysis" / "slope_stats" / "slope_distribution_by_gage.png"
 

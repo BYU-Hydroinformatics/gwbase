@@ -20,7 +20,7 @@ from scipy.stats import linregress
 from pathlib import Path
 
 BASE    = Path(__file__).parent.parent
-RESULTS = BASE / "result"
+RESULTS = BASE / "results"
 FIG_DIR = RESULTS / "analysis" / "scatter" / "top_percentile"
 TAB_DIR = FIG_DIR / "tables"
 TAB_DIR.mkdir(parents=True, exist_ok=True)
