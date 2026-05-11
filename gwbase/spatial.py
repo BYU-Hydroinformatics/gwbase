@@ -165,7 +165,7 @@ def associate_wells_with_reaches(
         # Calculate distances to all stream segments
         distances = stream_utm.geometry.distance(well.geometry)
         nearest_reach_idx = distances.idxmin()
-        nearest_reach = stream_utm.iloc[nearest_reach_idx]
+        nearest_reach = stream_utm.loc[nearest_reach_idx]
         min_distance = distances.min()
 
         # Get reach elevation
