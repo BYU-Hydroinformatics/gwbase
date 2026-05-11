@@ -1,20 +1,26 @@
 """
-标准化距平直接回归（Standardized Anomaly Regression）
+Standardized Anomaly Regression
 
-文献背景：
-  标准化距平（Z-score anomaly）是气候和水文学中去除季节性最直接的方法
-  （参考：IPCC标准流程、Kuss & Gurdak 2014 JHYDROL、Tremblay et al. 2011）。
-  不做差分，而是直接问：当某月WTE比该月历史均值高X个标准差时，
-  Q是否也同步偏高？斜率=1表示完全协同变化，斜率>0表示地下水补给河流。
+Background:
+  Standardized anomalies (Z-score) are the most direct method for removing
+  seasonality in climate and hydrology
+  (see: IPCC standard protocol, Kuss & Gurdak 2014 JHYDROL, Tremblay et al. 2011).
+  Instead of differencing, this method asks: when a month's WTE is X standard
+  deviations above its historical mean, does Q also rise proportionally?
+  A slope of 1 indicates perfect co-variation; slope > 0 indicates groundwater
+  recharges the stream.
 
-方法：
-  1. 计算各 well-gage 对每个自然月（1–12月）的多年均值和标准差
-  2. 标准化：z_wte = (wte - mean_m) / std_m，z_q 同理
-  3. 直接回归 z_q ~ z_wte（无差分）
-     注：先移除线性长期趋势再标准化，避免趋势影响
-  4. 每个数据点 = 一个月度观测，x轴/y轴单位均为"标准差"
+Method:
+  1. Compute multi-year mean and std for each calendar month (1–12) per
+     well-gage pair
+  2. Standardize: z_wte = (wte - mean_m) / std_m, and z_q likewise
+  3. Directly regress z_q ~ z_wte (no differencing)
+     Note: linear long-term trend is removed before standardization to avoid
+     spurious correlation driven by shared trends
+  4. Each data point is one monthly observation; both axes are in units of
+     standard deviations
 
-结果目录：results/std_anom_regression/
+Output directory: result/delta_methods/std_anomaly/
 """
 
 import numpy as np
@@ -38,7 +44,7 @@ TAB_DIR  = FIG_DIR / "tables"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR, TAB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 36   # 月度直接回归，数据量充足，要求更多样本
+MIN_OBS   = 36   # direct monthly regression; more data available, higher threshold
 MIN_YEARS = 5
 MIN_FIT   = 10
 TOP_N     = 10
@@ -67,11 +73,11 @@ data["year"]    = data["date"].dt.year
 data["quarter"] = data["month"].map(QUARTER_MAP)
 data["month_idx"] = data["year"]*12 + data["month"]
 
-# ── Step 1: 移除线性时间趋势（避免共同趋势驱动虚假相关）───────────────────────
+# ── Step 1: Remove linear time trend (prevent shared trend driving spurious correlation) ─
 print("Removing linear trends per well-gage pair...")
 
 def detrend_series(series, time_idx):
-    """OLS去线性趋势，返回残差。"""
+    """Remove linear trend via OLS and return residuals."""
     mask = ~(np.isnan(series) | np.isnan(time_idx))
     if mask.sum() < 12:
         return series
@@ -91,14 +97,14 @@ data["q_dt"]   = (data.groupby(["well_id","gage_id"])
                       index=g.index))
                   .reset_index(level=[0,1], drop=True))
 
-# ── Step 2: 计算月度 climatology（均值和标准差），做标准化 ─────────────────────
+# ── Step 2: Compute monthly climatology (mean and std) and standardize ───────
 print("Computing standardized anomalies...")
 clim = (data.groupby(["well_id","gage_id","month"])
         .agg(wte_mean=("wte_dt","mean"), wte_std=("wte_dt","std"),
              q_mean  =("q_dt",  "mean"), q_std  =("q_dt",  "std"))
         .reset_index())
 
-# 防止 std=0 的情况
+# Avoid division by zero when std = 0
 clim["wte_std"] = clim["wte_std"].replace(0, np.nan)
 clim["q_std"]   = clim["q_std"].replace(0, np.nan)
 
@@ -108,7 +114,7 @@ data["z_q"]   = (data["q_dt"]   - data["q_mean"])   / data["q_std"]
 
 data = data.dropna(subset=["z_wte","z_q"])
 
-# 截断极端值（>4σ）
+# Clip extreme values (> 4σ)
 data = data[(data["z_wte"].abs()<=4) & (data["z_q"].abs()<=4)].copy()
 
 data.to_csv(FEAT_DIR / "data_std_anom.csv", index=False)
@@ -169,7 +175,7 @@ for gname in GAGE_SHORT:
             ax.scatter(sub["z_wte"], sub["z_q"],
                        s=10, color=color, alpha=0.35,
                        edgecolors="none", zorder=3, label=q)
-    # slope=1 参考线（理想的同步响应）
+    # slope = 1 reference line (ideal co-response)
     xlim_ref = (-3.5, 3.5)
     ax.plot(xlim_ref, xlim_ref, color="#999999", linewidth=1.2,
             linestyle=":", zorder=2, label="slope=1 (ref)")
@@ -275,7 +281,7 @@ for gname, grp in reg_df.groupby("gage_name"):
         legend_entries.append((sc,label))
     s_all,ic_all,r_all,p_all,_ = linregress(all_x,all_y)
     ax.plot(x_fit,s_all*x_fit+ic_all,color="black",linewidth=2,linestyle="--",zorder=6)
-    # slope=1 参考线
+    # slope = 1 reference line
     ax.plot([-3.5,3.5],[-3.5,3.5],color="#999999",linewidth=1,linestyle=":",zorder=2)
     ax.axhline(0,color="#CCCCCC",linewidth=0.7,linestyle=":")
     ax.axvline(0,color="#CCCCCC",linewidth=0.7,linestyle=":")

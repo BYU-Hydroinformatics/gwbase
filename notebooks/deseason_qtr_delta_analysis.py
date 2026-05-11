@@ -1,13 +1,17 @@
 """
-去季节化季度连续差分：先减去该季度的多年平均（climatology），再做相邻季度差分。
+Deseasonalized consecutive quarter delta: subtract the multi-year seasonal
+climatology from each quarter, then compute consecutive quarter differences.
 
-逻辑：
-  1. 计算各 well-gage 每个季度的多年平均（Q1均值、Q2均值...）→ 季节 climatology
-  2. 每个季度值减去对应 climatology → 季度距平（anomaly）
-  3. 对距平做相邻季度差分（Q_t_anom - Q_{t-1}_anom）
-  4. 此时季节信号已消除，差分只反映偏离季节常态的变化
+Logic:
+  1. Compute multi-year mean WTE and Q for each calendar quarter (Q1, Q2, ...)
+     per well-gage pair → seasonal climatology
+  2. Subtract the seasonal climatology from each quarter value → quarterly anomaly
+  3. Compute consecutive quarter differences on the anomalies
+     (Q_t_anom - Q_{t-1}_anom)
+  4. Seasonal signal is removed; the difference reflects only deviations from
+     the seasonal norm
 
-结果目录：results/deseason_qtr_delta/
+Output directory: result/delta_methods/deseason_qtr/
 """
 
 import numpy as np
@@ -66,14 +70,14 @@ data["quarter"] = data["month"].map(lambda m: QUARTER_MAP[m][0])
 data["qtr_num"] = data["month"].map(lambda m: QUARTER_MAP[m][1])
 data["qtr_year"]= data["date"].dt.year
 
-# ── Step 1: 季度均值 ──────────────────────────────────────────────────────────
+# ── Step 1: Compute quarterly means ─────────────────────────────────────────
 print("Computing quarterly means...")
 qtr = (data.groupby(["well_id","gage_id","gage_name","qtr_year","quarter","qtr_num"])
        .agg(wte_qtr=("wte","mean"), q_qtr=("q","mean"), n_months=("wte","count"))
        .reset_index())
 qtr = qtr[qtr["n_months"] >= 3].copy()
 
-# ── Step 2: 减去各季度多年平均（climatology）→ 距平 ───────────────────────────
+# ── Step 2: Subtract seasonal climatology → quarterly anomaly ────────────────
 print("Removing seasonal climatology...")
 clim = (qtr.groupby(["well_id","gage_id","quarter"])
         .agg(wte_clim=("wte_qtr","mean"), q_clim=("q_qtr","mean"))
@@ -82,7 +86,7 @@ qtr = qtr.merge(clim, on=["well_id","gage_id","quarter"])
 qtr["wte_anom"] = qtr["wte_qtr"] - qtr["wte_clim"]
 qtr["q_anom"]   = qtr["q_qtr"]   - qtr["q_clim"]
 
-# ── Step 3: 相邻季度差分（对距平） ───────────────────────────────────────────
+# ── Step 3: Consecutive quarter differences (on anomalies) ───────────────────
 qtr["qtr_idx"] = qtr["qtr_year"] * 4 + qtr["qtr_num"]
 qtr = qtr.sort_values(["well_id","gage_id","qtr_idx"]).reset_index(drop=True)
 

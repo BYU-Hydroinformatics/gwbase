@@ -1,14 +1,17 @@
 """
-12个月滚动均值年际差分：先平滑掉季节波动，再做年际差分。
+Rolling 12-month mean annual difference: smooth out seasonal variation, then
+compute year-over-year differences.
 
-逻辑：
-  1. 对每个 well-gage 的月度 WTE 和 Q 计算 12 个月滚动均值
-     （至少需要 10 个月有效数据，min_periods=10）
-  2. 对滚动均值做 12 个月差分：rolling_mean_t - rolling_mean_{t-12}
-     即：当前 12m 均值 vs 一年前的 12m 均值
-  3. 12m 滚动均值本身已完全消除季节性，差分反映纯年际变化趋势
+Logic:
+  1. Compute 12-month rolling mean of monthly WTE and Q for each well-gage pair
+     (requires at least 10 valid months, min_periods=10)
+  2. Compute 12-month difference on the rolling means:
+     rolling_mean_t - rolling_mean_{t-12}
+     i.e., current 12-month mean vs. the 12-month mean one year earlier
+  3. The 12-month rolling mean fully removes seasonality; the difference
+     captures pure interannual change
 
-结果目录：results/rolling12m_delta/
+Output directory: result/delta_methods/rolling12m/
 """
 
 import numpy as np
@@ -32,7 +35,7 @@ TAB_DIR  = FIG_DIR / "tables"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR, TAB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 8    # 年际差分，数据量少，门槛降低
+MIN_OBS   = 8    # interannual diff produces fewer points; lower threshold
 MIN_YEARS = 3
 MIN_FIT   = 5
 TOP_N     = 10
@@ -62,14 +65,14 @@ data["quarter"] = data["month"].map(QUARTER_MAP)
 data["month_idx"] = data["year"] * 12 + data["month"]
 data = data.sort_values(["well_id","gage_id","month_idx"]).reset_index(drop=True)
 
-# ── Step 1: 12 个月滚动均值 ───────────────────────────────────────────────────
+# ── Step 1: 12-month rolling mean ────────────────────────────────────────────
 print("Computing 12-month rolling means...")
 data["wte_roll12"] = (data.groupby(["well_id","gage_id"])["wte"]
                       .transform(lambda x: x.rolling(12, min_periods=10).mean()))
 data["q_roll12"]   = (data.groupby(["well_id","gage_id"])["q"]
                       .transform(lambda x: x.rolling(12, min_periods=10).mean()))
 
-# ── Step 2: 12 个月差分（年际变化） ───────────────────────────────────────────
+# ── Step 2: 12-month difference (interannual change) ─────────────────────────
 print("Computing 12-month diff on rolling means...")
 data["delta_wte"]   = (data.groupby(["well_id","gage_id"])["wte_roll12"]
                        .transform(lambda x: x.diff(12)))
@@ -77,7 +80,7 @@ data["delta_q"]     = (data.groupby(["well_id","gage_id"])["q_roll12"]
                        .transform(lambda x: x.diff(12)))
 data["month_diff"]  = data.groupby(["well_id","gage_id"])["month_idx"].diff(12)
 
-# 只保留恰好跨 12 个月的有效行
+# Keep only rows with exactly a 12-month gap
 data = data[(data["month_diff"] == 12)].dropna(subset=["delta_wte","delta_q"])
 
 # ── Outlier removal (IQR×3) ──────────────────────────────────────────────────

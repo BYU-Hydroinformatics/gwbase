@@ -1,14 +1,15 @@
 """
-方法对比汇总：将所有去噪/delta方法的回归结果汇聚到一个文件夹，生成对比图和报告。
+Method comparison summary: aggregate regression results from all delta methods
+into one folder and generate comparison figures and a summary report.
 
-输出：results/method_comparison/
-  summary_table.csv            — 所有方法 × gage 的 pooled 回归统计汇总
+Output: result/analysis/method_comparison/
+  summary_table.csv            — pooled regression statistics for all methods × gages
   figures/
-    comparison_pooled_slope.png  — 各gage各方法 pooled 回归斜率对比
-    comparison_r_squared.png     — 各gage各方法 pooled R²对比
-    comparison_pvalue.png        — 各gage各方法 pooled -log10(p_value) 对比
-    comparison_heatmap.png       — 全局热力图（方法 × gage × 指标）
-    slope_distributions/         — 每种方法的斜率分布直方图（per-well）
+    comparison_pooled_slope.png  — pooled regression slope by method and gage
+    comparison_r_squared.png     — pooled R² by method and gage
+    comparison_pvalue.png        — pooled -log10(p_value) by method and gage
+    comparison_heatmap.png       — global heatmap (method × gage × metric)
+    slope_distributions/         — per-well slope distribution histogram per method
 """
 
 import numpy as np
@@ -35,10 +36,10 @@ GAGE_SHORT = {
 }
 GAGE_ORDER = list(GAGE_SHORT.values())
 
-# ── 方法定义：名称 / 文件路径 / 是否有季度列 ──────────────────────────────────
-# ── 方法定义：名称 / delta数据路径 / x列 / y列 ────────────────────────────────
-# 每个方法用 pooled scatter 回归（把 gage 下所有 well 的数据点合并做一次 OLS），
-# 对应 scatter_by_gage 图里那条黑色虚线，而非 per-well 回归的统计汇总。
+# ── Method definitions: name / delta data path / x column / y column ─────────
+# Each method uses a pooled scatter regression (all wells under a gage combined
+# into one OLS fit), corresponding to the dashed black line in scatter_by_gage
+# plots — not a summary of per-well regression statistics.
 METHODS = [
     ("Monthly delta\n(original)",
      RESULTS / "features" / "data_with_deltas.csv",
@@ -62,11 +63,11 @@ METHODS = [
 
 METHOD_COLORS = plt.cm.tab10(np.linspace(0, 1, len(METHODS)))
 
-# ── 读入 delta 数据，计算每方法×gage 的 pooled 回归 ───────────────────────────
+# ── Load delta data and compute pooled regression per method × gage ──────────
 from scipy.stats import linregress
 
 print("Loading delta data and computing pooled regressions...")
-all_dfs   = {}   # label → delta DataFrame（供斜率分布图用，沿用 per-well 回归文件）
+all_dfs   = {}   # label → delta DataFrame (used for per-well slope distribution plots)
 summary_rows = []
 
 for (label, path, xcol, ycol) in METHODS:
@@ -76,11 +77,11 @@ for (label, path, xcol, ycol) in METHODS:
     df = pd.read_csv(path)
     df["gage_short"] = df["gage_name"].map(GAGE_SHORT)
 
-    # 同时保留用于斜率分布的 per-well 回归（沿用旧文件）
+    # Compute per-well regression directly from delta data for slope distribution plots
     reg_path = path.parent / path.name.replace("data_", "regression_").replace(
         "_deltas.csv", "_by_well.csv").replace("data_with_deltas.csv",
         "../features/regression_by_well.csv")
-    # 简单处理：直接从 delta 数据做 per-well linregress（供斜率分布图）
+    # Simple approach: compute per-well linregress directly from the delta data
     well_slopes = {}
     for (wid, gid, gname), grp in df.groupby(["well_id","gage_id","gage_name"]):
         sub = grp[[xcol,ycol]].dropna()
@@ -122,7 +123,7 @@ summary = pd.DataFrame(summary_rows)
 summary.to_csv(OUT_DIR / "summary_table.csv", index=False)
 print(f"  Saved summary_table.csv  ({len(summary)} rows)")
 
-# ── 通用 grouped bar chart 函数（基于 pooled 回归指标）────────────────────────
+# ── Generic grouped bar chart function (based on pooled regression metrics) ───
 def grouped_bar(metric, ylabel, title, outname, ylim=None, hline=None):
     method_labels = list(all_dfs.keys())
     n_methods = len(method_labels)
@@ -185,7 +186,7 @@ grouped_bar("neg_log10_p", "−log₁₀(p-value)  [higher = more significant]",
             "Pooled regression significance by method and gage\n(dashed = p=0.05 threshold)",
             "comparison_pvalue.png", hline=-np.log10(0.05))
 
-# ── 热力图：方法 × gage，三个指标分列 ────────────────────────────────────────
+# ── Heatmap: method × gage, three metrics as separate columns ────────────────
 print("Generating heatmap...")
 method_labels = list(all_dfs.keys())
 short_labels  = [m.replace("\n"," ") for m in method_labels]
@@ -225,7 +226,7 @@ for col, (metric, mtitle, cmap, vmin, vmax) in enumerate(metrics):
     ax.set_yticklabels(short_labels, fontsize=8)
     ax.set_title(mtitle, fontsize=11, fontweight="bold")
 
-    # 在格子里写数值
+    # Annotate each cell with its numeric value
     for i in range(len(short_labels)):
         for j in range(len(GAGE_ORDER)):
             v = mat[i, j]
@@ -249,7 +250,7 @@ plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"  Saved → {out}")
 
-# ── 斜率分布：每种方法一行，每个gage一列 ─────────────────────────────────────
+# ── Slope distributions: one row per method, one column per gage ─────────────
 print("Generating slope distribution figures per method...")
 for label, df in all_dfs.items():
     fname = label.replace("\n","_").replace(" ","_").replace("/","").lower() + ".png"
@@ -285,7 +286,7 @@ for label, df in all_dfs.items():
     plt.close(fig)
 print(f"  Saved {len(all_dfs)} slope distribution figures → {DIST_DIR}")
 
-# ── 综合对比图（每个 gage 一列，三行指标）────────────────────────────────────
+# ── Per-gage method comparison figure (one column per gage) ──────────────────
 print("Generating per-gage method comparison figure...")
 
 fig, axes = plt.subplots(1, len(GAGE_ORDER), figsize=(22, 6),
