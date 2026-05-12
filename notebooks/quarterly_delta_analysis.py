@@ -45,8 +45,7 @@ TAB_DIR  = FIG_DIR / "tables"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR, TAB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 20   # minimum quarter-year pairs per well-gage
-MIN_YEARS = 3    # minimum years of data
+MIN_YEARS = 3    # matches config min_years
 MIN_FIT   = 5
 TOP_N     = 10
 CMAP      = cm.get_cmap("tab10")
@@ -127,7 +126,7 @@ for (wid, gid, gname, quarter), grp in qtr_mean.groupby(
     x = grp["delta_wte_qtr"].values
     y = grp["delta_q_qtr"].values
     n_years = grp["qtr_year"].nunique()
-    if len(x) < MIN_OBS or n_years < MIN_YEARS or x.std() == 0:
+    if n_years < MIN_YEARS or x.std() == 0:
         continue
     s, intercept, r_val, p_val, _ = linregress(x, y)
     pr, pp = pearsonr(x, y)

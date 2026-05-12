@@ -17,8 +17,7 @@ OUT_DIR = RESULTS / "analysis" / "senslope"
 OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 20
-MIN_YEARS = 3
+MIN_YEARS = 3    # matches config min_years
 
 GAGE_SHORT = {
     '10126000': 'Bear River\nnr Corinne',
@@ -43,9 +42,9 @@ sf_mk = pd.read_csv(OUT_CSV / 'mk_streamflow_bfd1.csv')
 sf_mk['gage_id'] = sf_mk['gage_id'].astype(str)
 sf_mk = sf_mk.set_index('gage_id')
 
-# Filter WTE: n_obs >= MIN_OBS and year_span >= MIN_YEARS
-wte = wte_all[(wte_all['n_obs'] >= MIN_OBS) & (wte_all['year_span'] >= MIN_YEARS)].copy()
-print(f"WTE wells after filter (n≥{MIN_OBS}, ya≥{MIN_YEARS}): {len(wte)} / {len(wte_all)}")
+# Filter WTE: year_span >= MIN_YEARS (obs count already guaranteed by Step 8 pipeline filter)
+wte = wte_all[wte_all['year_span'] >= MIN_YEARS].copy()
+print(f"WTE wells after filter (ya≥{MIN_YEARS}): {len(wte)} / {len(wte_all)}")
 print(f"  Per gage:\n{wte.groupby('gage_id').size().to_string()}")
 
 # ── Save filtered WTE table ────────────────────────────────────────────────────
@@ -120,7 +119,7 @@ for ax, gage_id in zip(axes, gages_with_wte):
 
     ax.axhline(0, color='#D62728', linewidth=1.5, linestyle='--', alpha=0.8)
     ax.set_xticks([0])
-    ax.set_xticklabels([f'n≥{MIN_OBS}, ya≥{MIN_YEARS}'], fontsize=9)
+    ax.set_xticklabels([f'ya≥{MIN_YEARS}'], fontsize=9)
     ax.set_ylabel("WTE Sen's slope (ft/yr)", fontsize=9)
     ax.set_title(GAGE_SHORT.get(gage_id, gage_id).replace('\n', ' '),
                  fontsize=10, fontweight='bold')
@@ -156,7 +155,7 @@ for ax in axes[n_gages:]:
 
 fig.suptitle(
     f"Per-well WTE Sen's Slope — Full Record\n"
-    f"Filter: n≥{MIN_OBS}, ya≥{MIN_YEARS}  |  "
+    f"Filter: ya≥{MIN_YEARS}  |  "
     f"box = IQR, whiskers = 5–95th pct, outliers hidden; "
     f"red dashed = 0",
     fontsize=12, fontweight='bold', y=1.01

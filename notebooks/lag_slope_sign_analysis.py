@@ -22,7 +22,6 @@ RESULTS = BASE / "results"
 OUT_DIR = RESULTS / "analysis" / "lag_slope_sign"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS = 20
 TARGET_GAGES = {
     "BEAR RIVER NEAR CORINNE - UT":   "Bear River",
     "WEBER RIVER NEAR PLAIN CITY - UT": "Weber River",
@@ -63,7 +62,7 @@ for lag_name in LAG_ORDER:
     for (well_id, gage_id, gage_name), grp in df.groupby(["well_id","gage_id","gage_name"]):
         x = grp[x_col].values
         y = grp["delta_q"].values
-        if len(x) < MIN_OBS or x.std() == 0:
+        if len(x) < 2 or x.std() == 0:
             continue
         s, intercept, r_val, p_val, _ = linregress(x, y)
         records.append({

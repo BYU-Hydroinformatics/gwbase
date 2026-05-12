@@ -38,7 +38,7 @@ T10F_DIR  = FIG_DIR / "top10_by_r2_fit"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS  = 8    # minimum years of paired data
+MIN_OBS  = 3    # minimum annual pairs for regression (matches config min_years)
 MIN_FIT  = 5    # minimum points to draw a fit line
 TOP_N    = 10
 CMAP     = cm.get_cmap("tab10")

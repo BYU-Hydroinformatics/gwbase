@@ -44,8 +44,7 @@ TAB_DIR  = FIG_DIR / "tables"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR, TAB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 36   # direct monthly regression; more data available, higher threshold
-MIN_YEARS = 5
+MIN_YEARS = 3    # matches config min_years
 MIN_FIT   = 10
 TOP_N     = 10
 CMAP      = cm.get_cmap("tab10")
@@ -126,7 +125,7 @@ reg_rows = []
 for (wid, gid, gname), grp in data.groupby(["well_id","gage_id","gage_name"]):
     x, y = grp["z_wte"].values, grp["z_q"].values
     n_years = grp["year"].nunique()
-    if len(x)<MIN_OBS or n_years<MIN_YEARS or x.std()==0: continue
+    if n_years<MIN_YEARS or x.std()==0: continue
     s, ic, r_val, p_val, _ = linregress(x, y)
     pr, pp = pearsonr(x, y)
     sr, sp = spearmanr(x, y)

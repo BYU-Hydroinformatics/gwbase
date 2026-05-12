@@ -35,8 +35,7 @@ TAB_DIR  = FIG_DIR / "tables"
 for d in [FEAT_DIR, FIG_DIR, SCAT_DIR, T10_DIR, T10F_DIR, TAB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-MIN_OBS   = 10
-MIN_YEARS = 3
+MIN_YEARS = 3    # matches config min_years
 MIN_FIT   = 5
 TOP_N     = 10
 CMAP      = cm.get_cmap("tab10")
@@ -117,7 +116,7 @@ reg_rows = []
 for (wid, gid, gname), grp in qtr.groupby(["well_id","gage_id","gage_name"]):
     x, y = grp["delta_wte"].values, grp["delta_q"].values
     n_years = grp["qtr_year"].nunique()
-    if len(x) < MIN_OBS or n_years < MIN_YEARS or x.std() == 0:
+    if n_years < MIN_YEARS or x.std() == 0:
         continue
     s, ic, r_val, p_val, _ = linregress(x, y)
     pr, pp = pearsonr(x, y)

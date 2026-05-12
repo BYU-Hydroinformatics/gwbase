@@ -38,8 +38,6 @@ LAG_X_COL = {
     '5 Year':  'delta_wte_lag_5_years',
 }
 
-MIN_OBS = 20   # matches config.yaml well_quality.min_measurements
-
 GAGE_NAME_MAP = {
     '10126000': 'Bear River\nNr Corinne',
     '10141000': 'Weber River\nNr Plain City',
@@ -61,7 +59,7 @@ def _mi(x, y, n_bins=20):
     return mutual_info_score(xd, yd)
 
 def _reg(x, y):
-    if len(x) < MIN_OBS or x.std() == 0:
+    if len(x) < 2 or x.std() == 0:
         return dict(slope=np.nan, r2=np.nan, p=np.nan, n=len(x))
     slope, intercept, r, p, _ = stats.linregress(x, y)
     return dict(slope=slope, r2=r**2, p=p, n=len(x))
@@ -92,11 +90,9 @@ for lag_label, path in LAGS.items():
             mi=mi
         ))
 
-        # per-pair stats (only wells meeting MIN_OBS)
+        # per-pair stats
         for well_id, w in g.groupby('well_id'):
             wx, wy = w[x_col].values, w['delta_q'].values
-            if len(wx) < MIN_OBS:
-                continue
             wreg = _reg(wx, wy)
             wmi  = _mi(wx, wy)
             pair_records.append(dict(
@@ -342,7 +338,7 @@ for lag_label, (df_sc, x_col) in all_sc.items():
         x, y = sub[x_col].values, sub['delta_q'].values
         ax.scatter(x, y, s=6, alpha=0.35, color='steelblue', rasterized=True)
 
-        if len(x) >= MIN_OBS and x.std() > 0:
+        if len(x) >= 2 and x.std() > 0:
             slope, intercept, r, p, _ = stats.linregress(x, y)
             xl = np.array(gage_xlim.get(gage_id, (x.min(), x.max())))
             ax.plot(xl, slope * xl + intercept, color='red', linewidth=1.5)
