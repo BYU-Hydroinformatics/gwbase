@@ -421,75 +421,28 @@ def run_step_7_pairing(
     return paired
 
 
-def _filter_qualified_pairs(
-    df: pd.DataFrame,
-    min_obs: int,
-    min_years: float,
-) -> pd.DataFrame:
-    """
-    Keep only well-gage pairs whose paired monthly records meet both the
-    minimum observation count and minimum year-span thresholds.
-
-    This mirrors the Step 4 raw-measurement filter so that data_with_deltas.csv
-    (and all derived lag files) contain only pairs that satisfy the same quality
-    criteria set in config.yaml → well_quality.
-    """
-    df = df.copy()
-    df['date'] = pd.to_datetime(df['date'])
-
-    stats = df.groupby(['well_id', 'gage_id']).agg(
-        n_obs=('date', 'count'),
-        year_span=('date', lambda x: (x.max() - x.min()).days / 365.25),
-    ).reset_index()
-
-    qualified = stats.loc[
-        (stats['n_obs'] >= min_obs) & (stats['year_span'] >= min_years),
-        ['well_id', 'gage_id'],
-    ]
-
-    n_pairs_before = df.groupby(['well_id', 'gage_id']).ngroups
-    n_wells_before = df['well_id'].nunique()
-
-    df = df.merge(qualified, on=['well_id', 'gage_id'], how='inner')
-
-    n_pairs_after = df.groupby(['well_id', 'gage_id']).ngroups
-    n_wells_after = df['well_id'].nunique()
-
-    print(f"  Pair quality filter (min_obs={min_obs}, min_years={min_years}):")
-    print(f"    Pairs : {n_pairs_before} → {n_pairs_after}")
-    print(f"    Wells : {n_wells_before} → {n_wells_after}")
-
-    return df
-
-
 def run_step_8_delta_metrics(
     paired_data: pd.DataFrame,
     output_dir: str,
-    min_obs: int = 20,
-    min_years: float = 3.0,
 ):
     """
     Step 8: Compute ΔWTE and ΔQ
 
-    - Calculate change from baseline
-    - Filter to qualified pairs (min_obs paired monthly records, min_years span)
-    - Create lagged versions from the filtered data
+    - Calculate change from baseline (WTE − WTE₀, Q − Q₀)
+    - Create lagged ΔWTE variants (3mo, 6mo, 1yr, 5yr)
+
+    Quality filtering is handled upstream in Step 4 (raw measurements).
+    All wells reaching this step already satisfy the min_measurements and
+    min_years criteria from config.yaml.
     """
     print("\n" + "="*60)
     print("STEP 8: Delta Metrics Computation")
     print("="*60)
 
-    # Compute delta metrics
     data_with_deltas = gwbase.compute_delta_metrics(paired_data)
 
-    # Filter to qualified pairs — this is the single quality gate for all analyses
-    data_with_deltas = _filter_qualified_pairs(data_with_deltas, min_obs, min_years)
-
-    # Save results
     data_with_deltas.to_csv(os.path.join(output_dir, 'data_with_deltas.csv'), index=False)
 
-    # Create lag versions from the already-filtered data so all lag files
-    # contain exactly the same set of qualified pairs.
     for lag, unit in [(1, 'years'), (5, 'years'), (3, 'months'), (6, 'months')]:
         lag_data = gwbase.create_lag_analysis(data_with_deltas, lag, unit)
         suffix = f'{lag}yr' if unit == 'years' else f'{lag}mo'
@@ -961,9 +914,7 @@ def main():
 
     # Step 8: Delta Metrics
     if start_step <= 8 <= end_step:
-        data_with_deltas = run_step_8_delta_metrics(
-            paired, dirs['features'], min_obs=min_wte, min_years=min_years
-        )
+        data_with_deltas = run_step_8_delta_metrics(paired, dirs['features'])
         # Re-save with gage_name added
         _add_gage_name(data_with_deltas, gage_name_map).to_csv(
             os.path.join(dirs['features'], 'data_with_deltas.csv'), index=False

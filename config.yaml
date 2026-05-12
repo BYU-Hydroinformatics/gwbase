@@ -26,19 +26,16 @@ filtering:
   # are excluded as hydrologically disconnected.
   elevation_buffer_m: 30.0
 
-# ── Well Data Quality Filters (applied at Step 4 AND Step 8) ──────────────────
-# These two parameters are the single quality gate for all analyses.
-#   Step 4: filters raw field measurements before PCHIP interpolation.
-#   Step 8: filters paired monthly records so data_with_deltas.csv and all
-#           derived lag files only contain pairs that pass both criteria.
+# ── Step 4: Well Data Quality Filters ─────────────────────────────────────────
+# Applied to raw field measurements before PCHIP interpolation.
+# This is the single quality gate — all downstream steps and analyses
+# operate on wells that satisfy both criteria.
 # Changing these values and re-running from Step 4 produces a new filtered
 # dataset that every downstream analysis will use automatically.
 well_quality:
-  # Minimum number of field measurements required per well (Step 4)
-  # and minimum paired monthly records per well-gage pair (Step 8).
+  # Minimum number of raw field measurements required per well.
   min_measurements: 20
-  # Minimum record span (years) at both the raw-measurement level (Step 4)
-  # and the paired monthly level (Step 8).
+  # Minimum record span (years) per well.
   min_years: 3
 
 # ── Analysis: Gage Exclusions ─────────────────────────────────────────────────
