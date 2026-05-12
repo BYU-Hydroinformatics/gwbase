@@ -103,18 +103,6 @@ qtr_mean["year_diff"] = qtr_mean.groupby(
 qtr_mean = qtr_mean[qtr_mean["year_diff"] == 1].dropna(
     subset=["delta_wte_qtr","delta_q_qtr"])
 
-# ── Outlier removal per gage (3-std on both delta_wte and delta_q) ───────────
-def std_mask(series, k=3.0):
-    mu, sigma = series.mean(), series.std()
-    if sigma == 0:
-        return pd.Series(True, index=series.index)
-    return (series - mu).abs() <= k * sigma
-
-before = len(qtr_mean)
-mask_wte = qtr_mean.groupby(["gage_id"])["delta_wte_qtr"].transform(std_mask)
-qtr_mean = qtr_mean[mask_wte].copy()
-print(f"  Outlier removal (3-std on delta_wte per gage): {before - len(qtr_mean)} rows removed")
-
 qtr_mean.to_csv(FEAT_DIR / "data_quarterly_deltas.csv", index=False)
 print(f"  Saved data_quarterly_deltas.csv  ({len(qtr_mean)} rows)")
 

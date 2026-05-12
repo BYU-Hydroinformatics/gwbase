@@ -82,18 +82,6 @@ data["month_diff"]  = data.groupby(["well_id","gage_id"])["month_idx"].diff(12)
 # Keep only rows with exactly a 12-month gap
 data = data[(data["month_diff"] == 12)].dropna(subset=["delta_wte","delta_q"])
 
-# ── Outlier removal (IQR×3) ──────────────────────────────────────────────────
-def iqr_mask(series, k=3.0):
-    q1, q3 = series.quantile(0.25), series.quantile(0.75)
-    iqr = q3 - q1
-    if iqr == 0:
-        return pd.Series(True, index=series.index)
-    return (series >= q1 - k*iqr) & (series <= q3 + k*iqr)
-
-before = len(data)
-data = data[data.groupby(["well_id","gage_id"])["delta_wte"].transform(iqr_mask)].copy()
-print(f"  Outlier removal: {before - len(data)} rows removed")
-
 data.to_csv(FEAT_DIR / "data_rolling12m_deltas.csv", index=False)
 print(f"  Saved  ({len(data)} rows)")
 

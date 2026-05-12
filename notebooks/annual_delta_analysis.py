@@ -78,18 +78,6 @@ annual["delta_q_ann"]   = annual.groupby(["well_id","gage_id"])["q_ann"].diff()
 annual["year_diff"] = annual.groupby(["well_id","gage_id"])["year"].diff()
 annual = annual[annual["year_diff"] == 1].dropna(subset=["delta_wte_ann","delta_q_ann"])
 
-# ── Remove delta_wte outliers per well-gage (IQR × 3) ────────────────────────
-def iqr_mask(series, k=3.0):
-    q1, q3 = series.quantile(0.25), series.quantile(0.75)
-    iqr = q3 - q1
-    return (series >= q1 - k*iqr) & (series <= q3 + k*iqr)
-
-before = len(annual)
-annual = annual[annual.groupby(["well_id","gage_id"])["delta_wte_ann"]
-                .transform(iqr_mask)].copy()
-after = len(annual)
-print(f"  Outlier removal (IQR×3 on ΔWTE): {before - after} rows removed")
-
 annual.to_csv(FEAT_DIR / "data_annual_deltas.csv", index=False)
 print(f"  Saved data_annual_deltas.csv  ({len(annual)} rows, "
       f"{annual['well_id'].nunique()} wells)")

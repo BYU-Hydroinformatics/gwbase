@@ -2,7 +2,7 @@
 Data preprocessing functions for GWBASE.
 
 This module implements Step 4 of the GWBASE workflow:
-- Outlier detection using Z-score and IQR methods
+- Outlier detection using 3×IQR (per well, on raw WTE before PCHIP)
 - Filtering wells with insufficient data
 """
 
@@ -140,27 +140,28 @@ class GroundwaterOutlierDetector(SimpleOutlierDetector):
     def detect_outliers(
         self,
         min_points: int = 5,
-        zscore_threshold: float = 3.0,
-        iqr_multiplier: float = 2.0
+        iqr_multiplier: float = 3.0
     ) -> pd.DataFrame:
         """
-        Detect outliers in groundwater data by well.
+        Detect outliers in groundwater WTE data by well using 3×IQR.
+
+        IQR-only (no Z-score): WTE distributions are often skewed, so
+        Z-score (which assumes normality) risks removing legitimate extremes
+        like drought lows. 3×IQR catches only genuine recording errors while
+        preserving real hydrological variability.
 
         Parameters
         ----------
         min_points : int, default 5
-            Minimum points needed for statistical tests
-        zscore_threshold : float, default 3.0
-            Z-score threshold for outlier detection
-        iqr_multiplier : float, default 2.0
-            IQR multiplier for outlier detection
+            Minimum points needed to run the test
+        iqr_multiplier : float, default 3.0
+            IQR multiplier; 3.0 retains all but the most extreme data errors
 
         Returns
         -------
         pd.DataFrame
-            Data with outlier flags added
+            Data with is_outlier flag added
         """
-        # Sort by well_id and date
         self.data = self.data.sort_values(
             [self.WELL_ID_COLUMN, self.DATE_COLUMN]
         ).reset_index(drop=True)
@@ -169,30 +170,19 @@ class GroundwaterOutlierDetector(SimpleOutlierDetector):
 
         for well_id in self.data['well_id'].unique():
             well_data = self.data[self.data['well_id'] == well_id].copy()
-            n_points = len(well_data)
-
             well_data['is_outlier'] = False
 
-            if n_points >= min_points:
+            if len(well_data) >= min_points:
                 wte_values = well_data['wte'].values
-
-                # Z-score method
-                z_scores = np.abs(stats.zscore(wte_values, nan_policy='omit'))
-                is_zscore_outlier = z_scores > zscore_threshold
-
-                # IQR method
                 Q1, Q3 = np.nanpercentile(wte_values, [25, 75])
                 IQR = Q3 - Q1
                 if IQR > 0:
                     lower_bound = Q1 - iqr_multiplier * IQR
                     upper_bound = Q3 + iqr_multiplier * IQR
-                    is_iqr_outlier = (
+                    well_data['is_outlier'] = (
                         (wte_values < lower_bound) |
                         (wte_values > upper_bound)
                     )
-
-                    # Combine methods
-                    well_data['is_outlier'] = is_zscore_outlier | is_iqr_outlier
 
             results.append(well_data)
 
