@@ -86,6 +86,13 @@ def interpolate_daily_pchip(
         month_starts = pd.date_range(start=first_month_start, end=last_month_start, freq='MS')
         # Middle of month is approximated as 15th (or 14 days after month start)
         full_dates = month_starts + pd.offsets.Day(14)
+        # Clip to actual observation range to prevent PCHIP extrapolation:
+        # a mid-month date before the first (or after the last) measurement
+        # falls outside the spline domain and produces unrealistic values.
+        full_dates = full_dates[(full_dates >= start_date) & (full_dates <= end_date)]
+        if len(full_dates) == 0:
+            wells_skipped += 1
+            continue
 
         # Convert dates to ordinal numbers for interpolation
         x_obs = group[date_col].map(pd.Timestamp.toordinal)
