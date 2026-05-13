@@ -413,9 +413,6 @@ def run_step_7_pairing(
     # Calculate baseline values
     paired = gwbase.calculate_baseline_values(paired)
 
-    # Save results
-    paired.to_csv(os.path.join(output_dir, 'paired_well_streamflow.csv'), index=False)
-
     print(f"\nStep 7 complete. {len(paired):,} paired records.")
 
     return paired
@@ -441,7 +438,15 @@ def run_step_8_delta_metrics(
 
     data_with_deltas = gwbase.compute_delta_metrics(paired_data)
 
-    data_with_deltas.to_csv(os.path.join(output_dir, 'data_with_deltas.csv'), index=False)
+    # Remove known data error: gage 10163000 has delta_wte values > 1400 ft
+    # caused by a datum shift in the well record, not a real hydrological signal.
+    mask = (
+        (data_with_deltas['gage_id'].astype(str) == '10163000') &
+        (data_with_deltas['delta_wte'].abs() > 1400)
+    )
+    if mask.any():
+        print(f"  Removed {mask.sum()} rows: gage 10163000 |delta_wte| > 1400 ft (datum error)")
+        data_with_deltas = data_with_deltas[~mask].copy()
 
     for lag, unit in [(1, 'years'), (5, 'years'), (3, 'months'), (6, 'months')]:
         lag_data = gwbase.create_lag_analysis(data_with_deltas, lag, unit)
@@ -926,12 +931,6 @@ def main():
 
     # Step 9: Analysis (needs clean_data and monthly interpolated for well timeseries)
     if start_step <= 9 <= end_step:
-        # Always reload data_with_deltas from CSV to avoid gage_id type issues from in-memory pipeline
-        data_with_deltas = pd.read_csv(os.path.join(dirs['features'], 'data_with_deltas.csv'))
-        data_with_deltas['date'] = pd.to_datetime(data_with_deltas['date'])
-        # Remove outlier for gage 10163000 (delta_wte > 1400 ft)
-        mask = (data_with_deltas['gage_id'].astype(str) == '10163000') & (data_with_deltas['delta_wte'].abs() > 1400)
-        data_with_deltas = data_with_deltas[~mask].copy()
         # Ensure clean_data and monthly data available for well timeseries
         if clean_data is None:
             clean_data = pd.read_csv(os.path.join(dirs['processed'], 'well_ts_cleaned.csv'))

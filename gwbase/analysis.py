@@ -479,7 +479,8 @@ def compute_seasonal_monthly_analysis(
     def _regress_group(g):
         if len(g) < min_observations:
             return None
-        x, y = g[delta_wte_col].values, g[delta_q_col].values
+        x = np.asarray(g[delta_wte_col].values, dtype=np.float64)
+        y = np.asarray(g[delta_q_col].values, dtype=np.float64)
         if np.std(x) == 0 or np.std(y) == 0:
             return None
         try:
@@ -583,6 +584,9 @@ def combine_regression_summary(
         })
 
     combined = pd.DataFrame(records)
+
+    if combined.empty:
+        return combined
 
     # Order: gage, then overall -> seasonal -> monthly, then by period
     type_order = {'overall': 0, 'seasonal': 1, 'monthly': 2}

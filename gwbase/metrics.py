@@ -178,8 +178,8 @@ def compute_regression_by_gage(
         if len(clean) < min_observations:
             continue
 
-        x = clean[delta_wte_col].values
-        y = clean[delta_q_col].values
+        x = np.asarray(clean[delta_wte_col].values, dtype=np.float64)
+        y = np.asarray(clean[delta_q_col].values, dtype=np.float64)
 
         # Check for variance and sufficient data
         if len(x) < 2 or len(y) < 2:
@@ -191,7 +191,6 @@ def compute_regression_by_gage(
         try:
             slope, intercept, r_value, p_value, std_err = linregress(x, y)
         except (ValueError, AttributeError, TypeError) as e:
-            # Skip if regression fails (e.g., insufficient data, NaN issues)
             continue
 
         results.append({
@@ -264,8 +263,8 @@ def compute_regression_by_well(
         if len(clean) < min_observations:
             continue
 
-        x = clean[delta_wte_col].values
-        y = clean[delta_q_col].values
+        x = np.asarray(clean[delta_wte_col].values, dtype=np.float64)
+        y = np.asarray(clean[delta_q_col].values, dtype=np.float64)
 
         # Check for variance and sufficient data
         if len(x) < 2 or len(y) < 2:

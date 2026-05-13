@@ -52,6 +52,8 @@ def _compute_and_plot_regression(x, y, linewidth=2.5, label=None, zorder=10):
     tuple: (slope, intercept, r_squared, p_value, std_err)
     """
     if len(x) > 1 and np.std(x) > 0 and np.std(y) > 0:
+        x = np.asarray(x, dtype=np.float64)
+        y = np.asarray(y, dtype=np.float64)
         slope, intercept, r_value, p_value, std_err = linregress(x, y)
         r_squared = r_value ** 2
         
@@ -1017,6 +1019,10 @@ def plot_regression_summary(
     """
     os.makedirs(output_dir, exist_ok=True)
 
+    if gage_stats.empty or 'r_squared' not in gage_stats.columns:
+        print(f"  No regression results to plot; skipping regression summary")
+        return
+
     # R² distribution
     plt.figure(figsize=figsize)
     sns.histplot(gage_stats['r_squared'], bins=30, edgecolor='black')
@@ -1325,11 +1331,14 @@ def plot_seasonal_monthly_scatter(
         x = group[delta_wte_col].values
         y = group[delta_q_col].values
         r2 = np.nan
-        if len(np.unique(x)) > 1 and np.std(y) > 0:
-            slope, intercept, r_value, p_value, std_err = linregress(x, y)
-            r2 = r_value ** 2
-            x_range = np.array([x.min(), x.max()])
-            ax.plot(x_range, intercept + slope * x_range, 'r-', linewidth=1.5, zorder=5)
+        if len(x) >= 2 and len(np.unique(x)) > 1 and np.std(y) > 0:
+            try:
+                slope, intercept, r_value, p_value, std_err = linregress(x, y)
+                r2 = r_value ** 2
+                x_range = np.array([x.min(), x.max()])
+                ax.plot(x_range, intercept + slope * x_range, 'r-', linewidth=1.5, zorder=5)
+            except Exception:
+                pass
         ax.set_title(f'{period_name}\nN={len(group)} R²={r2:.3f}' if not np.isnan(r2) else f'{period_name}\nN={len(group)}')
         ax.set_xlabel('ΔWTE (ft)')
         ax.set_ylabel('ΔQ (cfs)')

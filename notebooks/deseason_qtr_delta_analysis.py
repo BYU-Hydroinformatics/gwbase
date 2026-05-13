@@ -95,18 +95,6 @@ qtr["idx_diff"]  = qtr.groupby(["well_id","gage_id"])["qtr_idx"].diff()
 
 qtr = qtr[qtr["idx_diff"] == 1].dropna(subset=["delta_wte","delta_q"])
 
-# ── Outlier removal (IQR×3) ──────────────────────────────────────────────────
-def iqr_mask(series, k=3.0):
-    q1, q3 = series.quantile(0.25), series.quantile(0.75)
-    iqr = q3 - q1
-    if iqr == 0:
-        return pd.Series(True, index=series.index)
-    return (series >= q1 - k*iqr) & (series <= q3 + k*iqr)
-
-before = len(qtr)
-qtr = qtr[qtr.groupby(["well_id","gage_id"])["delta_wte"].transform(iqr_mask)].copy()
-print(f"  Outlier removal: {before - len(qtr)} rows removed")
-
 qtr.to_csv(FEAT_DIR / "data_deseason_qtr_deltas.csv", index=False)
 print(f"  Saved  ({len(qtr)} rows)")
 
