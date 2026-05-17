@@ -1318,7 +1318,7 @@ def plot_seasonal_monthly_scatter(
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
     def _plot_subplot(ax, group, period_name):
-        """Plot one subplot: scatter + regression."""
+        """Plot one subplot: scatter + regression + reference lines + stats."""
         if len(group) < min_observations:
             ax.text(0.5, 0.5, f'N < {min_observations}', ha='center', va='center',
                     transform=ax.transAxes, fontsize=12)
@@ -1328,9 +1328,11 @@ def plot_seasonal_monthly_scatter(
             data=group, x=delta_wte_col, y=delta_q_col,
             hue=well_id_col, palette='viridis', legend=False, alpha=0.6, ax=ax
         )
+        ax.axhline(0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
+        ax.axvline(0, color='k', linestyle='--', linewidth=0.8, alpha=0.5)
         x = group[delta_wte_col].values
         y = group[delta_q_col].values
-        r2 = np.nan
+        r2 = slope = p_value = np.nan
         if len(x) >= 2 and len(np.unique(x)) > 1 and np.std(y) > 0:
             try:
                 slope, intercept, r_value, p_value, std_err = linregress(x, y)
@@ -1339,10 +1341,16 @@ def plot_seasonal_monthly_scatter(
                 ax.plot(x_range, intercept + slope * x_range, 'r-', linewidth=1.5, zorder=5)
             except Exception:
                 pass
-        ax.set_title(f'{period_name}\nN={len(group)} R²={r2:.3f}' if not np.isnan(r2) else f'{period_name}\nN={len(group)}')
+        ax.set_title(f'{period_name}\nN={len(group)}', fontsize=10)
         ax.set_xlabel('ΔWTE (ft)')
         ax.set_ylabel('ΔQ (cfs)')
         ax.grid(True, alpha=0.3)
+        if not np.isnan(r2):
+            p_str = '< 0.01' if p_value < 0.01 else f'{p_value:.2f}'
+            stats = f"Slope={slope:.2f}\nR²={r2:.3f}\np={p_str}"
+            ax.text(0.02, 0.98, stats, transform=ax.transAxes,
+                    fontsize=8, ha='left', va='top',
+                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     # Seasonal: one figure per gage, 2x2 subplots
     for gage_id in df[gage_id_col].unique():
