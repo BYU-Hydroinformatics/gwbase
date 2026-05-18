@@ -152,7 +152,7 @@ lags_x  = np.arange(MAX_LAG + 1)
 fig, axes = plt.subplots(2, 3, figsize=(15, 9), sharey=True)
 axes = axes.flatten()
 
-for ax, (gage_id, color) in zip(axes, zip(gages, COLORS)):
+for i, (ax, (gage_id, color)) in enumerate(zip(axes, zip(gages, COLORS))):
     curves = [c for c in ccf_by_gage[gage_id] if not np.all(np.isnan(c))]
     if not curves:
         ax.set_visible(False)
@@ -189,6 +189,10 @@ for ax, (gage_id, color) in zip(axes, zip(gages, COLORS)):
     ax.set_xlim(0, MAX_LAG)
     ax.grid(alpha=0.3)
     ax.set_axisbelow(True)
+
+# hide any unused subplot slots
+for ax in axes[n_gages:]:
+    ax.set_visible(False)
 
 fig.suptitle('Cross-Correlation Function: ΔQ vs ΔWTE\n'
              '(positive lag → ΔWTE leads ΔQ)\n'
