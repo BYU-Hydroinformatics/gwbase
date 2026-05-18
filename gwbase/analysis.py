@@ -329,7 +329,8 @@ def compare_lag_vs_no_lag(
     no_lag_mi: pd.DataFrame,
     lag_mi: pd.DataFrame,
     well_id_col: str = 'well_id',
-    gage_id_col: str = 'gage_id'
+    gage_id_col: str = 'gage_id',
+    mi_col: str = 'mi'
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
     """
     Compare MI results between lagged and non-lagged analysis.
@@ -337,13 +338,15 @@ def compare_lag_vs_no_lag(
     Parameters
     ----------
     no_lag_mi : pd.DataFrame
-        MI results without lag
+        MI results without lag (output of compute_mi_analysis)
     lag_mi : pd.DataFrame
-        MI results with lag
+        MI results with lag (output of compute_mi_analysis with lag column)
     well_id_col : str, default 'well_id'
         Column name for well ID
     gage_id_col : str, default 'gage_id'
         Column name for gage ID
+    mi_col : str, default 'mi'
+        Column name for MI values in both input DataFrames
 
     Returns
     -------
@@ -356,15 +359,19 @@ def compare_lag_vs_no_lag(
     """
     # Rename columns for clarity
     lag_mi = lag_mi.rename(columns={
-        'mi': 'mi_lag',
+        mi_col: 'mi_lag',
         'pearson_r': 'pearson_lag',
+        'pearson_p': 'pearson_p_lag',
         'spearman_r': 'spearman_lag',
+        'spearman_p': 'spearman_p_lag',
         'n_records': 'n_records_lag'
     })
     no_lag_mi = no_lag_mi.rename(columns={
-        'mi': 'mi_no_lag',
+        mi_col: 'mi_no_lag',
         'pearson_r': 'pearson_no_lag',
+        'pearson_p': 'pearson_p_no_lag',
         'spearman_r': 'spearman_no_lag',
+        'spearman_p': 'spearman_p_no_lag',
         'n_records': 'n_records_no_lag'
     })
 

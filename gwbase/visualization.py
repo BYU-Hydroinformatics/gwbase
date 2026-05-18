@@ -948,49 +948,97 @@ def plot_mi_comparison(
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # Scatter plot: MI no-lag vs MI lag
-    plt.figure(figsize=figsize)
-    sns.scatterplot(data=merged_mi, x=mi_no_lag_col, y=mi_lag_col, alpha=0.6, s=30)
+    def _add_trend(ax, x, y, color='steelblue'):
+        mask = ~(np.isnan(x) | np.isnan(y))
+        xc, yc = x[mask], y[mask]
+        if len(xc) < 3:
+            return
+        slope, intercept, r_val, p_val, _ = linregress(xc, yc)
+        xs = np.array([xc.min(), xc.max()])
+        ax.plot(xs, slope * xs + intercept, color=color, linewidth=1.8, label='OLS trend')
+        p_str = f'{p_val:.2e}' if p_val < 0.001 else f'{p_val:.3f}'
+        ax.text(0.05, 0.95, f'r = {r_val:.3f}\np = {p_str}\nn = {len(xc)}',
+                transform=ax.transAxes, va='top', ha='left', fontsize=8,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
+    # Scatter: MI no-lag vs MI lag
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.scatter(merged_mi[mi_no_lag_col], merged_mi[mi_lag_col],
+               alpha=0.6, s=30, color='steelblue', zorder=2)
     lims = [0, max(merged_mi[[mi_no_lag_col, mi_lag_col]].max().max(), 0.001)]
-    plt.plot(lims, lims, 'r--', label='y=x')
-    plt.xlim(lims)
-    plt.ylim(lims)
-    plt.xlabel('MI (No-lag: ΔQ vs ΔWTE)')
-    plt.ylabel('MI (Lag: ΔQ vs ΔWTE_lag)')
-    plt.title('MI Comparison: Lag vs No-Lag')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    ax.plot(lims, lims, 'r--', linewidth=1.5, label='y = x (1:1)')
+    ax.set_xlim(lims); ax.set_ylim(lims)
+    _add_trend(ax, merged_mi[mi_no_lag_col].values, merged_mi[mi_lag_col].values)
+    ax.set_xlabel('MI (No-lag: ΔQ vs ΔWTE)')
+    ax.set_ylabel('MI (Lag: ΔQ vs ΔWTE_lag)')
+    ax.set_title('MI Comparison: Lag vs No-Lag')
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'mi_scatter_lag_vs_no_lag.png'), dpi=200)
     plt.close()
 
-    # Histograms
+    # Histograms with mean/median/std annotations
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-
-    sns.histplot(merged_mi[mi_no_lag_col].dropna(), bins=30, ax=axes[0],
-                color='skyblue', edgecolor='black')
-    axes[0].set_title('Distribution of MI (No-lag)')
-    axes[0].grid(True, alpha=0.3)
-
-    sns.histplot(merged_mi[mi_lag_col].dropna(), bins=30, ax=axes[1],
-                color='lightgreen', edgecolor='black')
-    axes[1].set_title('Distribution of MI (Lag)')
-    axes[1].grid(True, alpha=0.3)
-
+    for ax, col, color, label in [
+        (axes[0], mi_no_lag_col, 'skyblue',    'No-lag'),
+        (axes[1], mi_lag_col,    'lightgreen', 'Lag'),
+    ]:
+        vals = merged_mi[col].dropna()
+        sns.histplot(vals, bins=30, ax=ax, color=color, edgecolor='black')
+        mn, med, sd = vals.mean(), vals.median(), vals.std()
+        ax.axvline(mn,  color='red',    linestyle='--', linewidth=1.5, label=f'Mean: {mn:.3f}')
+        ax.axvline(med, color='orange', linestyle='-',  linewidth=1.5, label=f'Median: {med:.3f}')
+        ax.text(0.97, 0.95,
+                f'Mean:   {mn:.3f}\nMedian: {med:.3f}\nStd:    {sd:.3f}\nn = {len(vals)}',
+                transform=ax.transAxes, va='top', ha='right', fontsize=8,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+        ax.set_title(f'Distribution of MI ({label})')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'mi_distributions.png'), dpi=200)
     plt.close()
 
-    # Delta MI distribution
+    # Delta MI distribution with stats
     if 'delta_mi' in merged_mi.columns:
-        plt.figure(figsize=(6, 4))
-        sns.histplot(merged_mi['delta_mi'].dropna(), bins=40, color='salmon', edgecolor='black')
-        plt.axvline(0, color='k', linestyle='--', label='0')
-        plt.title('Distribution of ΔMI = MI_lag - MI_no_lag')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        dmi = merged_mi['delta_mi'].dropna()
+        sns.histplot(dmi, bins=40, ax=ax, color='salmon', edgecolor='black')
+        ax.axvline(0,            color='k',      linestyle='--', linewidth=1.5, label='Zero')
+        ax.axvline(dmi.mean(),   color='red',    linestyle='--', linewidth=1.5,
+                   label=f'Mean: {dmi.mean():.3f}')
+        ax.axvline(dmi.median(), color='orange', linestyle='-',  linewidth=1.5,
+                   label=f'Median: {dmi.median():.3f}')
+        pct_pos = (dmi > 0).mean() * 100
+        ax.text(0.97, 0.95,
+                f'Mean:   {dmi.mean():.3f}\nMedian: {dmi.median():.3f}\n'
+                f'Std:    {dmi.std():.3f}\n% lag > no-lag: {pct_pos:.1f}%\nn = {len(dmi)}',
+                transform=ax.transAxes, va='top', ha='right', fontsize=8,
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+        ax.set_title('Distribution of ΔMI = MI_lag − MI_no_lag')
+        ax.set_xlabel('ΔMI')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'delta_mi_distribution.png'), dpi=200)
+        plt.close()
+
+    # Nonlinearity gain vs |Pearson r|
+    if 'nl_gain_lag' in merged_mi.columns and 'pearson_lag' in merged_mi.columns:
+        fig, ax = plt.subplots(figsize=(6, 5))
+        x_nl = merged_mi['pearson_lag'].abs().values
+        y_nl = merged_mi['nl_gain_lag'].values
+        ax.scatter(x_nl, y_nl, alpha=0.6, s=30, color='purple', zorder=2)
+        ax.axhline(0, color='k', linestyle='--', linewidth=1, alpha=0.5)
+        _add_trend(ax, x_nl, y_nl, color='darkorchid')
+        ax.set_xlabel('|Pearson r| (Lag)')
+        ax.set_ylabel('Nonlinearity gain (MI_lag − |r_lag|)')
+        ax.set_title('Nonlinearity gain vs |Pearson r| (Lag)')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'nonlinearity_vs_pearson_lag.png'), dpi=200)
         plt.close()
 
     print(f"MI comparison plots saved to: {output_dir}")
@@ -1127,24 +1175,38 @@ def plot_mi_results(
         MI analysis results from compute_mi_analysis
     output_dir : str
         Directory to save plots
+    gage_id_col : str, default 'gage_id'
+        Column name for gage ID
+    figsize : tuple, default (10, 6)
+        Figure size
+
+    Example
+    -------
+    >>> plot_mi_results(mi_results, 'figures/mi')
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    # MI distribution histogram
-    plt.figure(figsize=figsize)
-    sns.histplot(mi_results['mi'].dropna(), bins=40, edgecolor='black', color='steelblue')
-    plt.axvline(mi_results['mi'].median(), color='r', linestyle='--',
-                label=f'Median: {mi_results["mi"].median():.3f}')
-    plt.xlabel('Mutual Information')
-    plt.ylabel('Count')
-    plt.title('Distribution of MI by Well-Gage Pair')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    # MI distribution with mean/median/std
+    fig, ax = plt.subplots(figsize=figsize)
+    vals = mi_results['mi'].dropna()
+    sns.histplot(vals, bins=40, ax=ax, edgecolor='black', color='steelblue')
+    mn, med, sd = vals.mean(), vals.median(), vals.std()
+    ax.axvline(mn,  color='red',    linestyle='--', linewidth=1.5, label=f'Mean: {mn:.3f}')
+    ax.axvline(med, color='orange', linestyle='-',  linewidth=1.5, label=f'Median: {med:.3f}')
+    ax.text(0.97, 0.95,
+            f'Mean:   {mn:.3f}\nMedian: {med:.3f}\nStd:    {sd:.3f}\nn = {len(vals)}',
+            transform=ax.transAxes, va='top', ha='right', fontsize=8,
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+    ax.set_xlabel('Mutual Information')
+    ax.set_ylabel('Count')
+    ax.set_title('Distribution of MI by Well-Gage Pair')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, 'mi_distribution.png'), dpi=150)
     plt.close()
 
-    # MI by gage (box plot or bar)
+    # MI by gage (box plot)
     if gage_id_col in mi_results.columns and mi_results[gage_id_col].nunique() > 1:
         plt.figure(figsize=(max(8, mi_results[gage_id_col].nunique() * 1.2), 5))
         sns.boxplot(data=mi_results, x=gage_id_col, y='mi')
@@ -1157,14 +1219,27 @@ def plot_mi_results(
         plt.savefig(os.path.join(output_dir, 'mi_by_gage.png'), dpi=150)
         plt.close()
 
-    # MI vs Pearson correlation
+    # MI vs |Pearson r| with OLS trend
     if 'pearson_r' in mi_results.columns:
-        plt.figure(figsize=(6, 6))
-        plt.scatter(mi_results['pearson_r'], mi_results['mi'], alpha=0.5, s=20)
-        plt.xlabel('Pearson r')
-        plt.ylabel('Mutual Information')
-        plt.title('MI vs Pearson Correlation')
-        plt.grid(True, alpha=0.3)
+        fig, ax = plt.subplots(figsize=(6, 6))
+        x = mi_results['pearson_r'].abs().values
+        y = mi_results['mi'].values
+        ax.scatter(x, y, alpha=0.5, s=20, color='steelblue', zorder=2)
+        mask = ~(np.isnan(x) | np.isnan(y))
+        xc, yc = x[mask], y[mask]
+        if len(xc) >= 3:
+            slope, intercept, r_val, p_val, _ = linregress(xc, yc)
+            xs = np.array([xc.min(), xc.max()])
+            ax.plot(xs, slope * xs + intercept, color='red', linewidth=1.8, label='OLS trend')
+            p_str = f'{p_val:.2e}' if p_val < 0.001 else f'{p_val:.3f}'
+            ax.text(0.05, 0.95, f'r = {r_val:.3f}\np = {p_str}\nn = {len(xc)}',
+                    transform=ax.transAxes, va='top', ha='left', fontsize=8,
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+        ax.set_xlabel('|Pearson r|')
+        ax.set_ylabel('Mutual Information')
+        ax.set_title('MI vs |Pearson Correlation|')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'mi_vs_pearson.png'), dpi=150)
         plt.close()
