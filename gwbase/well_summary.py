@@ -286,3 +286,114 @@ def main_cli() -> None:
 
 if __name__ == "__main__":
     main_cli()
+
+
+def analyze_wte_data_quality(df: pd.DataFrame) -> dict:
+    """
+    Analyze the quality of water table elevation (WTE) data.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing WTE measurements with columns 'Well_ID', 'Date', 'WTE'
+
+    Returns
+    -------
+    dict
+        Dictionary containing quality metrics
+    """
+    import seaborn as sns
+
+    # 1. Analysis of measurement counts per well
+    measurement_counts = df.groupby('Well_ID').size()
+
+    # Count wells with limited measurements
+    single_point_wells = measurement_counts[measurement_counts == 1]
+    two_point_wells = measurement_counts[measurement_counts == 2]
+
+    print(f"Wells with single measurement: {len(single_point_wells)} ({len(single_point_wells)/len(measurement_counts):.1%})")
+    print(f"Wells with two measurements: {len(two_point_wells)} ({len(two_point_wells)/len(measurement_counts):.1%})")
+
+    # 2. Time span analysis
+    time_analysis = df.groupby('Well_ID').agg({
+        'Date': lambda x: (x.max() - x.min()).days if len(x) > 1 else 0
+    }).rename(columns={'Date': 'time_span_days'})
+
+    # 3. Measurement frequency analysis
+    df['Year'] = df['Date'].dt.year
+    measurements_per_year = df.groupby(['Well_ID', 'Year']).size().reset_index(name='measurements')
+    avg_measurements_per_year = measurements_per_year.groupby('Well_ID')['measurements'].mean()
+
+    # 4. Visualization
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
+
+    measurement_counts.hist(bins=50, ax=ax1)
+    ax1.set_title('Distribution of Measurements per Well')
+    ax1.set_xlabel('Number of Measurements')
+    ax1.set_ylabel('Number of Wells')
+
+    time_analysis['time_span_days'].hist(bins=50, ax=ax2)
+    ax2.set_title('Distribution of Time Span per Well')
+    ax2.set_xlabel('Time Span (days)')
+    ax2.set_ylabel('Number of Wells')
+
+    sns.boxplot(y='WTE', data=df, ax=ax3)
+    ax3.set_title('WTE Distribution')
+
+    avg_measurements_per_year.hist(bins=30, ax=ax4)
+    ax4.set_title('Average Measurements per Year')
+    ax4.set_xlabel('Average Measurements')
+    ax4.set_ylabel('Number of Wells')
+
+    plt.tight_layout()
+
+    # 5. Generate quality report
+    report = {
+        'total_wells': len(measurement_counts),
+        'single_point_wells': len(single_point_wells),
+        'two_point_wells': len(two_point_wells),
+        'avg_measurements_per_well': measurement_counts.mean(),
+        'median_measurements_per_well': measurement_counts.median(),
+        'avg_time_span_days': time_analysis['time_span_days'].mean(),
+        'avg_measurements_per_year': avg_measurements_per_year.mean()
+    }
+
+    print("\nDetailed Quality Report:")
+    print("-" * 50)
+    print(f"Total number of wells: {report['total_wells']}")
+    print(f"Wells with single measurement: {report['single_point_wells']}")
+    print(f"Wells with two measurements: {report['two_point_wells']}")
+    print(f"Average measurements per well: {report['avg_measurements_per_well']:.2f}")
+    print(f"Median measurements per well: {report['median_measurements_per_well']:.2f}")
+    print(f"Average time span per well: {report['avg_time_span_days']:.2f} days")
+    print(f"Average measurements per year: {report['avg_measurements_per_year']:.2f}")
+
+    return report
+
+
+def analyze_seasonal_distribution(df: pd.DataFrame) -> pd.Series:
+    """
+    Analyze the seasonal distribution of measurements.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing measurements with 'Date' column
+
+    Returns
+    -------
+    pd.Series
+        Count of measurements per month
+    """
+    df['Month'] = df['Date'].dt.month
+    seasonal_dist = df.groupby('Month').size()
+
+    plt.figure(figsize=(10, 6))
+    seasonal_dist.plot(kind='bar')
+    plt.title('Seasonal Distribution of Measurements')
+    plt.xlabel('Month')
+    plt.ylabel('Number of Measurements')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    return seasonal_dist

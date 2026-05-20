@@ -274,3 +274,43 @@ def merge_well_reach_data(
     print(f"  Unique gages: {merged['gage_id'].nunique()}")
 
     return merged
+
+
+def process_wells_and_reaches(
+    wells_gdf,
+    stream_gdf,
+    gages_df: pd.DataFrame,
+    centroids_elev_df: pd.DataFrame,
+    utm_crs: str = "EPSG:32612"
+) -> pd.DataFrame:
+    """
+    Process wells and stream reaches with UTM distance calculations.
+
+    This function is an alias for associate_wells_with_reaches that accepts
+    centroids_elev_df directly (same as reach_elevations parameter).
+
+    Parameters
+    ----------
+    wells_gdf : gpd.GeoDataFrame
+        GeoDataFrame of well locations
+    stream_gdf : gpd.GeoDataFrame
+        GeoDataFrame of stream network
+    gages_df : pd.DataFrame
+        DataFrame with gage information including COMID_v2 for reach matching
+    centroids_elev_df : pd.DataFrame
+        DataFrame with reach elevations (Reach_ID, Avg_GSE columns)
+    utm_crs : str, default "EPSG:32612"
+        UTM projection for accurate distance calculations
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with well-reach associations and distances
+
+    Example
+    -------
+    >>> results = process_wells_and_reaches(well_shp, gslb_stream, gages_with_comid, centroids_elev_df)
+    """
+    return associate_wells_with_reaches(
+        wells_gdf, stream_gdf, gages_df, centroids_elev_df, utm_crs=utm_crs
+    )

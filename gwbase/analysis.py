@@ -896,3 +896,213 @@ def compute_mk_gage_wte(
     print(f"  Significant (p<0.05): {sig}")
     print(f"  Median Sen's slope: {df_out['sen_slope_yr'].median():.4f} ft/yr")
     return df_out
+
+
+def calculate_ccf_by_watershed_extended(df: pd.DataFrame, max_lag_years: int = 10) -> dict:
+    """
+    Calculate cross-correlation function between delta_q and delta_wte by watershed,
+    extended version for longer lags (multiple years).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with columns ['gage_id', 'well_id', 'date', 'delta_q', 'delta_wte']
+    max_lag_years : int, default 10
+        Maximum lag to test in years
+
+    Returns
+    -------
+    dict
+        Dictionary with gage_id as keys and CCF results as values
+    """
+    max_lag_days = max_lag_years * 365
+    ccf_results = {}
+
+    watersheds = df['gage_id'].unique()
+    print(f"Analyzing CCF for {len(watersheds)} watersheds with max lag of {max_lag_years} years...")
+
+    for gage_id in watersheds:
+        print(f"Processing watershed {gage_id}...")
+        watershed_data = df[df['gage_id'] == gage_id].copy()
+        wells = watershed_data['well_id'].unique()
+        well_ccf_results = {}
+
+        for well_id in wells:
+            well_data = watershed_data[watershed_data['well_id'] == well_id].copy()
+            well_data = well_data.sort_values('date')
+
+            if len(well_data) < 365 * 3:
+                continue
+
+            well_data = well_data.dropna(subset=['delta_q', 'delta_wte'])
+
+            if len(well_data) < 365 * 3:
+                continue
+
+            x = well_data['delta_q'].values
+            y = well_data['delta_wte'].values
+
+            x = (x - np.mean(x)) / (np.std(x) + 1e-10)
+            y = (y - np.mean(y)) / (np.std(y) + 1e-10)
+
+            from scipy import signal as _signal
+            correlation = _signal.correlate(y, x, mode='full')
+            lags = _signal.correlation_lags(len(y), len(x), mode='full')
+
+            valid_indices = np.abs(lags) <= max_lag_days
+            correlation = correlation[valid_indices]
+            lags = lags[valid_indices]
+            correlation = correlation / len(x)
+
+            well_ccf_results[well_id] = {
+                'lags': lags,
+                'correlation': correlation,
+                'max_corr': np.max(np.abs(correlation)),
+                'optimal_lag': lags[np.argmax(np.abs(correlation))],
+                'optimal_corr': correlation[np.argmax(np.abs(correlation))],
+                'n_points': len(well_data),
+                'data_years': len(well_data) / 365.25
+            }
+
+        ccf_results[gage_id] = well_ccf_results
+        print(f"  Processed {len(well_ccf_results)} wells with sufficient data")
+
+    return ccf_results
+
+
+def calculate_overall_and_watershed_ccf(ccf_results_extended: dict) -> tuple:
+    """
+    Calculate overall CCF statistics across all watersheds and individual watershed summaries.
+
+    Parameters
+    ----------
+    ccf_results_extended : dict
+        Output of calculate_ccf_by_watershed_extended
+
+    Returns
+    -------
+    tuple
+        (overall_stats, watershed_summary) dictionaries
+    """
+    print("Calculating overall CCF across all watersheds...")
+
+    all_optimal_lags = []
+    all_max_correlations = []
+
+    for gage_id, wells in ccf_results_extended.items():
+        for well_id, result in wells.items():
+            all_optimal_lags.append(result['optimal_lag'])
+            all_max_correlations.append(result['max_corr'])
+
+    overall_stats = {
+        'n_wells_total': len(all_optimal_lags),
+        'median_optimal_lag': np.median(all_optimal_lags),
+        'mean_optimal_lag': np.mean(all_optimal_lags),
+        'std_optimal_lag': np.std(all_optimal_lags),
+        'median_max_corr': np.median(all_max_correlations),
+        'mean_max_corr': np.mean(all_max_correlations),
+        'optimal_lags': all_optimal_lags,
+        'max_correlations': all_max_correlations
+    }
+
+    print("Calculating individual watershed CCF...")
+
+    watershed_summary = {}
+
+    for gage_id, wells in ccf_results_extended.items():
+        if not wells:
+            continue
+
+        optimal_lags = []
+        max_correlations = []
+        well_ids = []
+
+        for well_id, result in wells.items():
+            optimal_lags.append(result['optimal_lag'])
+            max_correlations.append(result['max_corr'])
+            well_ids.append(well_id)
+
+        if optimal_lags:
+            watershed_summary[gage_id] = {
+                'n_wells': len(optimal_lags),
+                'median_optimal_lag': np.median(optimal_lags),
+                'mean_optimal_lag': np.mean(optimal_lags),
+                'std_optimal_lag': np.std(optimal_lags),
+                'median_max_corr': np.median(max_correlations),
+                'mean_max_corr': np.mean(max_correlations),
+                'optimal_lags': optimal_lags,
+                'max_correlations': max_correlations,
+                'well_ids': well_ids
+            }
+
+    return overall_stats, watershed_summary
+
+
+def compare_lag_datasets(datasets: dict, original_key: str = 'Original') -> pd.DataFrame:
+    """
+    Compare basic dataset characteristics across different lag periods.
+
+    Parameters
+    ----------
+    datasets : dict
+        Mapping of period name to DataFrame, e.g. {'Original': df0, '1 year': df1, ...}
+    original_key : str, default 'Original'
+        Key in datasets to use as baseline for data_retention_pct calculation
+
+    Returns
+    -------
+    pd.DataFrame
+        Comparison table with one row per lag period
+    """
+    print("=" * 80)
+    print("DATASET COMPARISON ACROSS DIFFERENT LAG PERIODS")
+    print("=" * 80)
+
+    original_n_obs = len(datasets[original_key])
+    comparison_data = []
+
+    for period_name, data in datasets.items():
+        n_obs = len(data)
+        n_wells = data['well_id'].nunique()
+        n_gages = data['gage_id'].nunique()
+
+        min_date = data['date'].min()
+        max_date = data['date'].max()
+        date_span_years = (max_date - min_date).days / 365.25
+
+        wells_per_gage = data.groupby('gage_id')['well_id'].nunique()
+        obs_per_well = data.groupby('well_id').size()
+        data_retention = (n_obs / original_n_obs) * 100
+
+        comparison_data.append({
+            'lag_period': period_name,
+            'n_observations': n_obs,
+            'n_wells': n_wells,
+            'n_gages': n_gages,
+            'min_date': min_date.strftime('%Y-%m-%d'),
+            'max_date': max_date.strftime('%Y-%m-%d'),
+            'date_span_years': date_span_years,
+            'wells_per_gage_mean': wells_per_gage.mean(),
+            'wells_per_gage_median': wells_per_gage.median(),
+            'obs_per_well_mean': obs_per_well.mean(),
+            'obs_per_well_median': obs_per_well.median(),
+            'obs_per_well_min': obs_per_well.min(),
+            'obs_per_well_max': obs_per_well.max(),
+            'data_retention_pct': data_retention
+        })
+
+        print(f"\n{period_name.upper()}:")
+        print(f"  Total observations: {n_obs:,}")
+        print(f"  Number of wells: {n_wells:,}")
+        print(f"  Number of gages: {n_gages}")
+        print(f"  Date range: {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}")
+        print(f"  Date span: {date_span_years:.1f} years")
+        print(f"  Wells per gage: {wells_per_gage.mean():.1f} ± {wells_per_gage.std():.1f} (median: {wells_per_gage.median():.0f})")
+        print(f"  Observations per well: {obs_per_well.mean():.0f} ± {obs_per_well.std():.0f} (median: {obs_per_well.median():.0f})")
+        print(f"  Obs per well range: {obs_per_well.min()} to {obs_per_well.max()}")
+        print(f"  Data retention: {data_retention:.1f}% of original dataset")
+
+        obs_per_gage = data.groupby('gage_id').size()
+        print(f"  Observations per gage: {obs_per_gage.mean():.0f} ± {obs_per_gage.std():.0f}")
+
+    return pd.DataFrame(comparison_data)

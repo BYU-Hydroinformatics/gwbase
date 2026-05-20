@@ -241,3 +241,74 @@ def calculate_hydraulic_gradient(
         print(f"  Range: {result['hydraulic_gradient'].min():.6f} to {result['hydraulic_gradient'].max():.6f}")
 
     return result
+
+
+def filter_and_analyze_wte(
+    filtered_data: pd.DataFrame,
+    merged_df: pd.DataFrame,
+    distance_buffer_meters: float = 30.0,
+    delta_bins=None
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Filter wells based on elevation difference between WTE and stream reach, and compute bin statistics.
+
+    This is an alias for filter_by_elevation with an optional custom delta_bins parameter.
+
+    Parameters
+    ----------
+    filtered_data : pd.DataFrame
+        DataFrame with well time series including 'wte' column (in feet)
+    merged_df : pd.DataFrame
+        DataFrame with well-reach associations including 'reach_elev_m' column
+    distance_buffer_meters : float, default 30.0
+        Maximum allowed vertical distance below streambed (meters)
+    delta_bins : list, optional
+        Custom bin edges for delta_elev binning. If None, uses standard bins.
+
+    Returns
+    -------
+    tuple
+        (filtered_result, dist_stats) - Filtered data and bin statistics
+
+    Example
+    -------
+    >>> filtered, stats = filter_and_analyze_wte(filtered_data, merged_df, distance_buffer_meters=30)
+    """
+    filtered_data = filtered_data.copy()
+
+    # Convert WTE from feet to meters
+    filtered_data['wte_meters'] = filtered_data['wte'] * 0.3048
+
+    # Merge with well-reach data to get reach elevation
+    merged_data = pd.merge(
+        filtered_data,
+        merged_df[['well_id', 'reach_elev_m']],
+        on='well_id',
+        how='inner'
+    )
+
+    # Calculate elevation difference (reach - WTE)
+    merged_data['delta_elev'] = merged_data['reach_elev_m'] - merged_data['wte_meters']
+
+    # Filter: keep wells where delta_elev <= buffer distance
+    filtered_result = merged_data[merged_data['delta_elev'] <= distance_buffer_meters].copy()
+
+    # Define delta bins
+    if delta_bins is None:
+        delta_bins = [-float('inf'), -20, -10, -5, 0, 5, 10, 20, 30, 50, 75, 100, float('inf')]
+
+    bin_labels = [f"< {delta_bins[1]}"] + \
+                 [f"{delta_bins[i]} to {delta_bins[i+1]}" for i in range(1, len(delta_bins)-2)] + \
+                 [f">= {delta_bins[-2]}"]
+
+    filtered_result.loc[:, 'delta_bin'] = pd.cut(
+        filtered_result['delta_elev'], bins=delta_bins, labels=bin_labels
+    )
+
+    total_measurements = len(filtered_result)
+    dist_stats = filtered_result.groupby('delta_bin', observed=True).size().reset_index(name='count')
+    dist_stats['percentage'] = (dist_stats['count'] / total_measurements * 100).round(2)
+
+    print(dist_stats)
+
+    return filtered_result, dist_stats

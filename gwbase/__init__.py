@@ -18,6 +18,15 @@ The GWBASE workflow consists of 9 steps:
 __version__ = "0.1.0"
 __author__ = "Xueyi Li, Norman L. Jones, Gustavious P. Williams, Amin Aghababaei, Riley C. Hales"
 
+# Well summary and data quality
+from .well_summary import (
+    compute_well_summary_metrics,
+    compute_global_summary,
+    run_well_summary,
+    analyze_wte_data_quality,
+    analyze_seasonal_distribution,
+)
+
 # Data loading
 from .data_loading import (
     load_hydrography_data,
@@ -46,6 +55,7 @@ from .spatial import (
     locate_wells_in_catchments,
     associate_wells_with_reaches,
     merge_well_reach_data,
+    process_wells_and_reaches,
 )
 
 # Step 4: Preprocessing
@@ -68,6 +78,7 @@ from .interpolation import (
 # Step 6: Elevation filtering
 from .filtering import (
     filter_by_elevation,
+    filter_and_analyze_wte,
     analyze_elevation_sensitivity,
     calculate_hydraulic_gradient,
 )
@@ -107,6 +118,9 @@ from .analysis import (
     compute_mk_well_wte,
     compute_mk_streamflow,
     compute_mk_gage_wte,
+    calculate_ccf_by_watershed_extended,
+    calculate_overall_and_watershed_ccf,
+    compare_lag_datasets,
 )
 
 # Visualization
@@ -124,4 +138,36 @@ from .visualization import (
     plot_elevation_filter_sensitivity,
     plot_seasonal_monthly_analysis,
     plot_seasonal_monthly_scatter,
+    # CCF visualization (notebook 05)
+    plot_correlation_lag_curves,
+    plot_ccf_summary,
+    plot_ccf_watershed_details,
+    # Watershed mapping (notebook 07)
+    get_gage_watersheds_styled,
+    get_gage_terminal_basin,
+    get_gage_watersheds,
+    load_watershed_data,
+    calculate_well_gage_correlations,
+    run_watershed_correlation_analysis,
+    create_clean_correlation_maps_with_watersheds,
+    create_watershed_distance_maps_styled,
+    create_watershed_vertical_distance_maps_styled,
+    create_watershed_mi_maps_no_lag,
+    create_watershed_mi_delta_maps,
+    create_watershed_mi_delta_maps_fixed,
+    # Terminal gage visualization (notebook 02)
+    create_enhanced_watershed_visualization,
+    create_enhanced_gage_maps,
+    create_upstream_catchment_schematic,
+    # Seasonal reporting (notebook 06)
+    get_season_from_month,
+    generate_simple_seasonal_report,
+    # Per-gage scatter plotting (notebook 06)
+    plot_delta_scatter_by_gage,
+    plot_monthly_delta_scatter_by_gage,
+    plot_seasonal_delta_scatter_by_gage,
+    plot_monthly_timeseries_by_gage,
+    plot_seasonal_timeseries_by_gage,
+    plot_slope_lag_analysis,
+    plot_r2_lag_analysis,
 )
