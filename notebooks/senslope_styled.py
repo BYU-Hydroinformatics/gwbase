@@ -83,7 +83,7 @@ blue_patch = mpatches.Patch(color='#1F77B4', label='Increasing')
 ax.legend(handles=[red_patch, blue_patch], fontsize=9, loc='lower right')
 
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'fig1_streamflow_senslope_bar.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'fig1_streamflow_senslope_bar.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("\nFig 1 saved: fig1_streamflow_senslope_bar.png")
 
@@ -161,7 +161,7 @@ fig.suptitle(
     fontsize=12, fontweight='bold', y=1.01
 )
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'fig2_wte_senslope_boxplot.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'fig2_wte_senslope_boxplot.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("Fig 2 saved: fig2_wte_senslope_boxplot.png")
 

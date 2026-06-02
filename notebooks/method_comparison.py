@@ -167,7 +167,7 @@ def grouped_bar(metric, ylabel, title, outname, ylim=None, hline=None):
     ax.grid(axis="y", alpha=0.25)
     plt.tight_layout()
     out = FIG_DIR / outname
-    plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 
@@ -246,7 +246,7 @@ for col, (metric, mtitle, cmap, vmin, vmax) in enumerate(metrics):
 
 plt.tight_layout()
 out = FIG_DIR / "comparison_heatmap.png"
-plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"  Saved → {out}")
 
@@ -282,7 +282,7 @@ for label, df in all_dfs.items():
         ax.set_xlabel("Slope", fontsize=8)
     plt.tight_layout()
     out = DIST_DIR / fname
-    plt.savefig(out, dpi=150, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 print(f"  Saved {len(all_dfs)} slope distribution figures → {DIST_DIR}")
 
@@ -331,7 +331,7 @@ for ax, gshort in zip(axes, GAGE_ORDER):
 
 plt.tight_layout()
 out = FIG_DIR / "comparison_scores_per_gage.png"
-plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"  Saved → {out}")
 

@@ -131,7 +131,7 @@ def plot_per_well_subplots(gage_id, top_well_ids, metric_label, out_dir,
     )
     plt.tight_layout()
     out_path = out_dir / f"{gage_id}.png"
-    plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  [per_well]     Saved → {out_path}")
 
@@ -215,7 +215,7 @@ def plot_combined_with_per_well_fits(gage_id, top_well_ids, metric_label, out_di
 
     plt.tight_layout()
     out_path = out_dir / f"{gage_id}.png"
-    plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  [per_well_fit] Saved → {out_path}")
 

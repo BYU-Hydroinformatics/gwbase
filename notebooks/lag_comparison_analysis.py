@@ -151,7 +151,7 @@ for ax in axes:
     ax.set_axisbelow(True)
 
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'lag_r2_mi_by_gage.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'lag_r2_mi_by_gage.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 1 saved: lag_r2_mi_by_gage.png")
 
@@ -191,7 +191,7 @@ for ax, gage_id in zip(axes, gages):
 axes[0].set_ylabel('R² (per well-gage pair)', fontsize=10)
 fig.suptitle('Distribution of R² across Well-Gage Pairs by Lag Period', fontsize=13, fontweight='bold', y=1.02)
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'lag_r2_violin_by_gage.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'lag_r2_violin_by_gage.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 2 saved: lag_r2_violin_by_gage.png")
 
@@ -240,7 +240,7 @@ for ax in axes:
 
 fig.suptitle('Change in R² and MI with Lag (Gage Level)', fontsize=13, fontweight='bold')
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'lag_delta_r2_mi.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'lag_delta_r2_mi.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 3 saved: lag_delta_r2_mi.png")
 
@@ -285,7 +285,7 @@ for metric, ax in zip(['r2', 'mi'], axes):
 
 fig.suptitle('Lag Effectiveness by Gage and Metric', fontsize=13, fontweight='bold')
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'lag_pct_better_heatmap.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'lag_pct_better_heatmap.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 4 saved: lag_pct_better_heatmap.png")
 
@@ -361,7 +361,7 @@ for lag_label, (df_sc, x_col) in all_sc.items():
     fig.suptitle(f'ΔWTE vs ΔQ Scatter — {lag_label}', fontsize=12, fontweight='bold')
     plt.tight_layout()
     safe = lag_label.lower().replace(' ', '_')
-    fig.savefig(scatter_dir / f'scatter_{safe}.png', dpi=150, bbox_inches='tight')
+    fig.savefig(scatter_dir / f'scatter_{safe}.png', dpi=600, bbox_inches='tight')
     plt.close()
     print(f"  Scatter saved: scatter_{safe}.png")
 

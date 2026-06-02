@@ -181,7 +181,7 @@ for row, gname in enumerate(gage_order):
             ax.set_xlabel("Slope (cfs/ft·yr)", fontsize=8)
 
 p = FIG_DIR / "slope_distribution.png"
-plt.savefig(p, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(p, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"  Saved → {p}")
 
@@ -228,7 +228,7 @@ for gname in gage_order:
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = SCAT_DIR / f"{gname.split()[0].lower()}.png"
-    plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 
@@ -290,7 +290,7 @@ def plot_per_well_subplots(gage_name, top_ids, out_dir, metric_vals=None):
                  fontsize=10, fontweight="bold")
     plt.tight_layout()
     out = out_dir / f"{gage_name.split()[0].lower()}.png"
-    plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 
@@ -348,7 +348,7 @@ def plot_combined_fit(gage_name, top_ids, out_dir):
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = out_dir / f"{gage_name.split()[0].lower()}.png"
-    plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 

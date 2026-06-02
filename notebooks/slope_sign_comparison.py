@@ -224,6 +224,6 @@ fig.legend(handles=[neg_patch, pos_patch], loc="lower center",
            ncol=2, fontsize=10, framealpha=0.9,
            bbox_to_anchor=(0.5, 0.01))
 
-plt.savefig(OUT, dpi=180, bbox_inches="tight", facecolor="white")
+plt.savefig(OUT, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"Saved → {OUT}")

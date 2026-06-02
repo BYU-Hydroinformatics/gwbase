@@ -214,7 +214,7 @@ ax.annotate(
 )
 
 fig1.savefig(os.path.join(OUT_DIR, 'temporal_filter_sensitivity.png'),
-             dpi=180, bbox_inches='tight')
+             dpi=600, bbox_inches='tight')
 plt.close(fig1)
 print("\nSaved: temporal_filter_sensitivity.png")
 
@@ -256,7 +256,7 @@ ax2.annotate(
 )
 
 fig2.savefig(os.path.join(OUT_DIR, 'elevation_buffer_sensitivity.png'),
-             dpi=180, bbox_inches='tight')
+             dpi=600, bbox_inches='tight')
 plt.close(fig2)
 print("Saved: elevation_buffer_sensitivity.png")
 
@@ -303,7 +303,7 @@ ax3b.legend(
 )
 
 fig2.savefig(os.path.join(OUT_DIR, 'delta_elevation_distribution.png'),
-             dpi=180, bbox_inches='tight')
+             dpi=600, bbox_inches='tight')
 plt.close(fig2)
 print("Saved: delta_elevation_distribution.png")
 

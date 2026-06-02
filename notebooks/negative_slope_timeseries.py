@@ -127,7 +127,7 @@ for well_id in unique_wells:
 
     plt.tight_layout()
     out_path = OUT_DIR / f"{well_id}.png"
-    plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out_path}")
 

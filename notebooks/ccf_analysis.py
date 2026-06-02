@@ -199,7 +199,7 @@ fig.suptitle('Cross-Correlation Function: ΔQ vs ΔWTE\n'
              'Shaded band = ±1 SE across wells  |  Dashed = 95% CI',
              fontsize=13, fontweight='bold')
 plt.tight_layout()
-fig.savefig(OUT_FIG / 'ccf_curves_by_gage.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_FIG / 'ccf_curves_by_gage.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("\n  Fig 1 saved: ccf_curves_by_gage.png")
 
@@ -239,7 +239,7 @@ ax.legend(fontsize=9)
 ax.grid(axis='y', alpha=0.35)
 ax.set_axisbelow(True)
 plt.tight_layout()
-fig.savefig(OUT_FIG / 'ccf_peak_lag_violin.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_FIG / 'ccf_peak_lag_violin.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 2 saved: ccf_peak_lag_violin.png")
 
@@ -281,7 +281,7 @@ for i in range(n_gages):
 
 plt.colorbar(im, ax=ax, label='Mean CCF', shrink=0.8)
 plt.tight_layout()
-fig.savefig(OUT_FIG / 'ccf_heatmap.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_FIG / 'ccf_heatmap.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 3 saved: ccf_heatmap.png")
 
@@ -335,7 +335,7 @@ axes[1].grid(axis='y', alpha=0.3)
 axes[1].set_axisbelow(True)
 
 plt.tight_layout()
-fig.savefig(OUT_FIG / 'ccf_peak_vs_obs.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_FIG / 'ccf_peak_vs_obs.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 4 saved: ccf_peak_vs_obs.png")
 

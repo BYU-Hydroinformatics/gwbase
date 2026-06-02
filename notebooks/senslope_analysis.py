@@ -116,7 +116,7 @@ ax1.legend(lines1 + lines2, labels1 + labels2, fontsize=9, loc='upper right')
 ax1.grid(axis='y', alpha=0.3)
 ax1.set_axisbelow(True)
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'senslope_streamflow_bfd1.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'senslope_streamflow_bfd1.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("\n  Fig 1 saved: senslope_streamflow_bfd1.png")
 
@@ -173,7 +173,7 @@ ax.set_title("Distribution of Well WTE Sen's Slope by Gage\n"
 ax.grid(axis='y', alpha=0.3)
 ax.set_axisbelow(True)
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'senslope_wte_boxplot.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'senslope_wte_boxplot.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 2 saved: senslope_wte_boxplot.png")
 
@@ -215,7 +215,7 @@ ax.set_title("Well WTE Sen's Slope — Significant Only (p < 0.05)\n"
 ax.grid(axis='y', alpha=0.3)
 ax.set_axisbelow(True)
 plt.tight_layout()
-fig.savefig(OUT_DIR / 'senslope_wte_boxplot_sig.png', dpi=160, bbox_inches='tight')
+fig.savefig(OUT_DIR / 'senslope_wte_boxplot_sig.png', dpi=600, bbox_inches='tight')
 plt.close()
 print("  Fig 3 saved: senslope_wte_boxplot_sig.png")
 

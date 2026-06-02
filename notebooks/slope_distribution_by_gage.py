@@ -173,6 +173,6 @@ for row, gage_name in enumerate(gage_order):
                            edgecolor="#CCCCCC", alpha=0.95))
 
 plt.tight_layout(rect=[0, 0, 1, 0.995])
-plt.savefig(OUT, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(OUT, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"Saved → {OUT}")

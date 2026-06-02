@@ -136,7 +136,7 @@ def plot_simple_sum():
 
     plt.tight_layout()
     out = OUT_DIR / "gslb_simple_sum.png"
-    plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {out}")
     print(f"  Basin simple-sum slope = {basin_total:.4f} cfs/ft")
@@ -204,7 +204,7 @@ def plot_normalized():
 
     plt.tight_layout()
     out = OUT_DIR / "gslb_normalized.png"
-    plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {out}")
     print(f"  Basin normalized slope = {slope:.6f} ft⁻¹  (R²={r2:.4f}, p={p_str})")

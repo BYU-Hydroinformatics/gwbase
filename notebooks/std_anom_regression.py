@@ -201,7 +201,7 @@ for gname in GAGE_SHORT:
     ax.grid(True,alpha=0.2)
     plt.tight_layout()
     out = SCAT_DIR / f"{gname.split()[0].lower()}.png"
-    plt.savefig(out, dpi=160, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 
@@ -251,7 +251,7 @@ for gname, grp in reg_df.groupby("gage_name"):
                  fontsize=10,fontweight="bold")
     plt.tight_layout()
     out = T10_DIR / f"{gname.split()[0].lower()}.png"
-    plt.savefig(out,dpi=160,bbox_inches="tight",facecolor="white")
+    plt.savefig(out,dpi=600,bbox_inches="tight",facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 
@@ -301,7 +301,7 @@ for gname, grp in reg_df.groupby("gage_name"):
     ax.grid(True,alpha=0.25)
     plt.tight_layout()
     out = T10F_DIR / f"{gname.split()[0].lower()}.png"
-    plt.savefig(out,dpi=160,bbox_inches="tight",facecolor="white")
+    plt.savefig(out,dpi=600,bbox_inches="tight",facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out}")
 

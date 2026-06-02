@@ -110,7 +110,7 @@ def _pooled_scatter(df, y_col, y_label, title_suffix, filename):
     ax.grid(True, alpha=0.2)
     plt.tight_layout()
     out = OUT_DIR / filename
-    plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {out}")
 
@@ -161,7 +161,7 @@ def _facet(df, y_col, y_label, title_suffix, filename):
     )
     plt.tight_layout()
     out = OUT_DIR / filename
-    plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"Saved: {out}")
 

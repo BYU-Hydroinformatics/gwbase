@@ -128,7 +128,7 @@ def _plot_hist_median_sampling_interval(
     if len(vals) == 0:
         plt.figure(figsize=(8, 5))
         plt.text(0.5, 0.5, "No valid median sampling intervals", ha="center", va="center")
-        plt.savefig(output_path, dpi=150, bbox_inches="tight")
+        plt.savefig(output_path, dpi=600, bbox_inches="tight")
         plt.close()
         return
 
@@ -157,7 +157,7 @@ def _plot_hist_median_sampling_interval(
     ax.text(0.98, 0.98, txt, transform=ax.transAxes, fontsize=10, verticalalignment="top", horizontalalignment="right",
             bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
     fig.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(output_path, dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -187,7 +187,7 @@ def _plot_hist_n_obs(metrics: pd.DataFrame, output_path: str) -> None:
     ax.text(0.98, 0.98, txt, transform=ax.transAxes, fontsize=10, verticalalignment="top", horizontalalignment="right",
             bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
     fig.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(output_path, dpi=600, bbox_inches="tight")
     plt.close()
 
 
@@ -211,7 +211,7 @@ def _plot_scatter_record_length_vs_n_obs(metrics: pd.DataFrame, output_path: str
     ax.text(0.98, 0.98, txt, transform=ax.transAxes, fontsize=10, verticalalignment="top", horizontalalignment="right",
             bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
     fig.tight_layout()
-    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    fig.savefig(output_path, dpi=600, bbox_inches="tight")
     plt.close()
 
 

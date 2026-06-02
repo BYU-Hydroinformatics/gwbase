@@ -84,12 +84,12 @@ fig.tight_layout()
 
 # ── Save ──────────────────────────────────────────────────────────────────────
 Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
-fig.savefig(OUTPUT_PATH, dpi=300, bbox_inches='tight')
+fig.savefig(OUTPUT_PATH, dpi=600, bbox_inches='tight')
 print(f"\nSaved figure to: {OUTPUT_PATH}")
 
 # Also save as PNG for quick preview
 png_path = OUTPUT_PATH.replace('.pdf', '.png')
-fig.savefig(png_path, dpi=200, bbox_inches='tight')
+fig.savefig(png_path, dpi=600, bbox_inches='tight')
 print(f"Saved PNG preview to: {png_path}")
 
 plt.show()

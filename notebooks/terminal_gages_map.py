@@ -203,6 +203,6 @@ plt.tight_layout()
 
 (RESULTS / "analysis" / "maps" / "overview").mkdir(parents=True, exist_ok=True)
 out = RESULTS / "analysis" / "maps" / "overview" / "terminal_gages_map.png"
-plt.savefig(out, dpi=180, bbox_inches="tight", facecolor="white")
+plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
 print(f"Saved → {out}")
 plt.show()

@@ -198,7 +198,7 @@ def plot_well_timeseries(
             plt.tight_layout()
 
             filename = f'well_{well_id}_gage_{gage_id}_timeseries.png'
-            plt.savefig(os.path.join(output_dir, filename), dpi=150, bbox_inches='tight')
+            plt.savefig(os.path.join(output_dir, filename), dpi=600, bbox_inches='tight')
             plt.close()
 
     print(f"Plots saved to: {output_dir}")
@@ -296,7 +296,7 @@ def plot_well_timeseries_with_interpolation(
 
             plt.tight_layout()
             filename = f'well_{well_id}_gage_{gage_id}_timeseries.png'
-            plt.savefig(os.path.join(output_dir, filename), dpi=150, bbox_inches='tight')
+            plt.savefig(os.path.join(output_dir, filename), dpi=600, bbox_inches='tight')
             plt.close()
 
     print(f"Plots with interpolation saved to: {output_dir}")
@@ -447,7 +447,7 @@ def plot_filtered_pairs_scatter(
         # Save plot
         filename = f'well_{well_id}_gage_{gage_id}_scatter.png'
         plt.savefig(os.path.join(output_dir, filename),
-                   bbox_inches='tight', dpi=150)
+                   bbox_inches='tight', dpi=600)
         plt.close()
 
         stats_data.append({
@@ -625,7 +625,7 @@ def plot_pairs_by_r2_category(
             # Save plot
             filename = f'gage_{gage_id}_{category_name}_scatter.png'
             plt.savefig(os.path.join(output_dir, filename),
-                       bbox_inches='tight', dpi=150)
+                       bbox_inches='tight', dpi=600)
             plt.close()
 
             stats_data.append({
@@ -776,7 +776,7 @@ def plot_delta_scatter(
         plt.grid(True, alpha=0.3)
 
         plt.savefig(os.path.join(output_dir, f'gage_{gage_id}.png'),
-                   bbox_inches='tight', dpi=150)
+                   bbox_inches='tight', dpi=600)
         plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -900,7 +900,7 @@ def plot_filtered_pairs_by_gage(
         # Save plot
         filename = f'gage_{gage_id}_scatter.png'
         plt.savefig(os.path.join(output_dir, filename),
-                   bbox_inches='tight', dpi=150)
+                   bbox_inches='tight', dpi=600)
         plt.close()
 
         stats_data.append({
@@ -986,7 +986,7 @@ def plot_mi_comparison(
     ax.legend(fontsize=8)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'mi_scatter_lag_vs_no_lag.png'), dpi=200)
+    plt.savefig(os.path.join(output_dir, 'mi_scatter_lag_vs_no_lag.png'), dpi=600)
     plt.close()
 
     # Histograms with mean/median/std annotations
@@ -1008,7 +1008,7 @@ def plot_mi_comparison(
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'mi_distributions.png'), dpi=200)
+    plt.savefig(os.path.join(output_dir, 'mi_distributions.png'), dpi=600)
     plt.close()
 
     # Delta MI distribution with stats
@@ -1032,7 +1032,7 @@ def plot_mi_comparison(
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'delta_mi_distribution.png'), dpi=200)
+        plt.savefig(os.path.join(output_dir, 'delta_mi_distribution.png'), dpi=600)
         plt.close()
 
     # Nonlinearity gain vs |Pearson r|
@@ -1049,7 +1049,7 @@ def plot_mi_comparison(
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'nonlinearity_vs_pearson_lag.png'), dpi=200)
+        plt.savefig(os.path.join(output_dir, 'nonlinearity_vs_pearson_lag.png'), dpi=600)
         plt.close()
 
     print(f"MI comparison plots saved to: {output_dir}")
@@ -1093,7 +1093,7 @@ def plot_regression_summary(
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'r_squared_distribution.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, 'r_squared_distribution.png'), dpi=600)
     plt.close()
 
     # Slope distribution
@@ -1108,7 +1108,7 @@ def plot_regression_summary(
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'slope_distribution.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, 'slope_distribution.png'), dpi=600)
     plt.close()
 
     # R² vs number of observations
@@ -1119,7 +1119,7 @@ def plot_regression_summary(
     plt.title('R² vs Number of Observations')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'r_squared_vs_n_obs.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, 'r_squared_vs_n_obs.png'), dpi=600)
     plt.close()
 
     print(f"Regression summary plots saved to: {output_dir}")
@@ -1165,7 +1165,7 @@ def plot_elevation_filter_sensitivity(
     plt.title('Elevation Buffer Sensitivity Analysis')
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'elevation_buffer_sensitivity.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, 'elevation_buffer_sensitivity.png'), dpi=600)
     plt.close()
 
     print(f"Sensitivity plot saved to: {output_dir}")
@@ -1214,7 +1214,7 @@ def plot_mi_results(
     ax.legend()
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, 'mi_distribution.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, 'mi_distribution.png'), dpi=600)
     plt.close()
 
     # MI by gage (box plot)
@@ -1227,7 +1227,7 @@ def plot_mi_results(
         plt.title('MI Distribution by Gage')
         plt.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'mi_by_gage.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'mi_by_gage.png'), dpi=600)
         plt.close()
 
     # MI vs |Pearson r| with OLS trend
@@ -1252,7 +1252,7 @@ def plot_mi_results(
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'mi_vs_pearson.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'mi_vs_pearson.png'), dpi=600)
         plt.close()
 
     print(f"MI results plots saved to: {output_dir}")
@@ -1281,7 +1281,7 @@ def plot_seasonal_monthly_analysis(
         ax.set_ylabel('R²')
         ax.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'r_squared_by_season.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'r_squared_by_season.png'), dpi=600)
         plt.close()
 
         # Slope by season
@@ -1293,7 +1293,7 @@ def plot_seasonal_monthly_analysis(
         ax.set_ylabel('Slope (cfs/ft)')
         ax.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'slope_by_season.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'slope_by_season.png'), dpi=600)
         plt.close()
 
         # Mean R² and slope by season (summary bar)
@@ -1315,7 +1315,7 @@ def plot_seasonal_monthly_analysis(
             axes[1].set_xticklabels(season_agg.index, rotation=0)
             axes[1].set_ylabel('Mean Slope (cfs/ft)')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'seasonal_summary.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'seasonal_summary.png'), dpi=600)
         plt.close()
 
     if len(monthly_stats) > 0:
@@ -1333,7 +1333,7 @@ def plot_seasonal_monthly_analysis(
         plt.xticks(rotation=45, ha='right')
         ax.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'r_squared_by_month.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'r_squared_by_month.png'), dpi=600)
         plt.close()
 
         # Slope by month
@@ -1348,7 +1348,7 @@ def plot_seasonal_monthly_analysis(
         plt.xticks(rotation=45, ha='right')
         ax.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, 'slope_by_month.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, 'slope_by_month.png'), dpi=600)
         plt.close()
 
     print(f"Seasonal/monthly plots saved to: {output_dir}")
@@ -1448,7 +1448,7 @@ def plot_seasonal_monthly_scatter(
             _plot_subplot(axes[idx], group, season)
         fig.suptitle(f'Gage {gage_id} - ΔQ vs ΔWTE by Season', fontsize=14)
         plt.tight_layout()
-        plt.savefig(os.path.join(scatter_season_dir, f'gage_{gage_id}.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(scatter_season_dir, f'gage_{gage_id}.png'), dpi=600, bbox_inches='tight')
         plt.close()
 
     # Monthly: one figure per gage, 4x3 subplots
@@ -1461,7 +1461,7 @@ def plot_seasonal_monthly_scatter(
             _plot_subplot(axes[idx], group, month_name)
         fig.suptitle(f'Gage {gage_id} - ΔQ vs ΔWTE by Month', fontsize=14)
         plt.tight_layout()
-        plt.savefig(os.path.join(scatter_month_dir, f'gage_{gage_id}.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(scatter_month_dir, f'gage_{gage_id}.png'), dpi=600, bbox_inches='tight')
         plt.close()
 
     print(f"  Seasonal scatter: {df[gage_id_col].nunique()} gages -> {scatter_season_dir}")
@@ -2384,7 +2384,7 @@ def create_single_watershed_map(
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{gage_id}_watershed_no_lag_{safe_name}.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight',
+    plt.savefig(filepath, dpi=600, bbox_inches='tight',
                 facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
 
@@ -2537,7 +2537,7 @@ def create_single_styled_map(gage_id, gage_wells, subbasin_gdf, stream_gdf, lake
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{gage_id}_distance_{safe_name}.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight',
+    plt.savefig(filepath, dpi=600, bbox_inches='tight',
                 facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
 
@@ -2687,7 +2687,7 @@ def create_single_styled_map_vertical(gage_id, gage_wells, subbasin_gdf, stream_
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{int(gage_id)}_mi_{safe_name}_lag.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight',
+    plt.savefig(filepath, dpi=600, bbox_inches='tight',
                 facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
 
@@ -2810,7 +2810,7 @@ def create_single_styled_map_mi_no_lag(gage_id, gage_wells, subbasin_gdf, stream
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{int(gage_id)}_mi_no_lag_{safe_name}.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
+    plt.savefig(filepath, dpi=600, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
     print(f"✅ Saved map for gage {gage_id}: {filename}")
     return True
@@ -3000,7 +3000,7 @@ def create_single_styled_map_mi_delta(gage_id, gage_wells, subbasin_gdf, stream_
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{int(gage_id)}_delta_mi_{safe_name}.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
+    plt.savefig(filepath, dpi=600, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
     print(f"✅ Saved map for gage {gage_id}: {filename}")
     return True
@@ -3226,7 +3226,7 @@ def create_single_styled_map_mi_delta_fixed(gage_id, gage_wells, subbasin_gdf, s
     safe_name = gage_name.replace('/', '_').replace('\\', '_')[:40]
     filename = f"gage_{int(gage_id)}_delta_mi_{safe_name}_FIXED.png"
     filepath = os.path.join(save_dir, filename)
-    plt.savefig(filepath, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
+    plt.savefig(filepath, dpi=600, bbox_inches='tight', facecolor='white', edgecolor='none', pad_inches=0.1)
     plt.close()
     print(f"✅ Saved FIXED map for gage {gage_id}: {filename}")
     return True
@@ -4058,7 +4058,7 @@ def plot_ccf_summary(
     watershed_summary,
     max_lag_years=10,
     save_dir="./figures",
-    dpi=300
+    dpi=600
 ):
     """
     Plot Figure 1 (Summary):
@@ -4174,7 +4174,7 @@ def plot_ccf_watershed_details(
     watershed_summary,
     max_lag_years=10,
     save_dir="./figures",
-    dpi=300,
+    dpi=600,
     max_wells_per_panel=10
 ):
     """
@@ -4535,7 +4535,7 @@ def create_enhanced_watershed_visualization():
     plt.tight_layout()
 
     out_path = '../reports/figures/enhanced_terminal_gages_watersheds.png'
-    plt.savefig(out_path, dpi=300, bbox_inches='tight',
+    plt.savefig(out_path, dpi=600, bbox_inches='tight',
                 facecolor=BG_COLOR, edgecolor='none')
     plt.show()
 
@@ -4635,7 +4635,7 @@ def create_single_map(terminal_gage_id, terminal_relationships, subbasin_gdf,
     filename = f"gage_{terminal_gage_id}_{safe_name}.png"
     filepath = os.path.join(output_dir, filename)
 
-    plt.savefig(filepath, dpi=300, bbox_inches='tight',
+    plt.savefig(filepath, dpi=600, bbox_inches='tight',
                 facecolor='white', edgecolor='none')
     plt.close()
 
@@ -4695,7 +4695,7 @@ def create_visualization(result_df):
         ax4.grid(True, alpha=0.3)
 
         plt.tight_layout()
-        plt.savefig("../reports/figures/upstream_gages_analysis.png", dpi=300, bbox_inches='tight')
+        plt.savefig("../reports/figures/upstream_gages_analysis.png", dpi=600, bbox_inches='tight')
         plt.show()
 
         print("✅ Visualization saved to: ../reports/figures/upstream_gages_analysis.png")
@@ -5029,7 +5029,7 @@ def plot_delta_scatter_by_gage(
                  fontsize=10, ha='right', va='top',
                  bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
         plt.savefig(os.path.join(output_dir, f'gage_{gage_id}.png'),
-                    bbox_inches='tight', dpi=150)
+                    bbox_inches='tight', dpi=600)
         plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -5167,7 +5167,7 @@ def plot_monthly_delta_scatter_by_gage(
         plt.tight_layout()
         plt.subplots_adjust(top=0.90)
         plt.savefig(os.path.join(output_dir, f'gage_{gage_id}_monthly.png'),
-                    bbox_inches='tight', dpi=300)
+                    bbox_inches='tight', dpi=600)
         plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -5265,7 +5265,7 @@ def plot_seasonal_delta_scatter_by_gage(
                      verticalalignment='top',
                      bbox=dict(boxstyle='round', facecolor='white', alpha=0.8, edgecolor='black'))
             fname = f'gage_{gage_id}_{season}_delta_q_vs_lag_delta_wte.png'
-            plt.savefig(os.path.join(output_dir, fname), bbox_inches='tight', dpi=300)
+            plt.savefig(os.path.join(output_dir, fname), bbox_inches='tight', dpi=600)
             plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -5365,7 +5365,7 @@ def plot_monthly_timeseries_by_gage(
             ax2.xaxis.set_major_locator(mdates.AutoDateLocator())
             plt.xticks(rotation=45)
             plt.savefig(os.path.join(output_dir, f'gage_{gage_id}_{month:02d}_{month_name}.png'),
-                        bbox_inches='tight')
+                        dpi=600, bbox_inches='tight')
             plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -5460,7 +5460,7 @@ def plot_seasonal_timeseries_by_gage(
             ax2.xaxis.set_major_locator(mdates.AutoDateLocator())
             plt.xticks(rotation=45)
             plt.savefig(os.path.join(output_dir, f'gage_{gage_id}_{season}.png'),
-                        bbox_inches='tight')
+                        dpi=600, bbox_inches='tight')
             plt.close()
 
     stats_df = pd.DataFrame(stats_data)
@@ -5500,7 +5500,7 @@ def plot_slope_lag_analysis(data: pd.DataFrame) -> None:
     ax.grid(True, alpha=0.3)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('slope_by_lag_lines.png', dpi=300, bbox_inches='tight')
+    plt.savefig('slope_by_lag_lines.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -5508,7 +5508,7 @@ def plot_slope_lag_analysis(data: pd.DataFrame) -> None:
                 cmap='RdBu_r', center=0, cbar_kws={'label': 'Slope (ft/year)'}, ax=ax)
     ax.set_title('Slope Heatmap Across Different Lag Periods', fontsize=14, fontweight='bold')
     plt.tight_layout()
-    plt.savefig('slope_heatmap.png', dpi=300, bbox_inches='tight')
+    plt.savefig('slope_heatmap.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -5519,7 +5519,7 @@ def plot_slope_lag_analysis(data: pd.DataFrame) -> None:
     ax.set_title('Distribution of Slopes Across Different Lag Periods', fontsize=14, fontweight='bold')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('slope_boxplot.png', dpi=300, bbox_inches='tight')
+    plt.savefig('slope_boxplot.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -5539,7 +5539,7 @@ def plot_slope_lag_analysis(data: pd.DataFrame) -> None:
     plt.suptitle('Individual Gage Slope Patterns Across Lag Periods',
                  fontsize=16, fontweight='bold', y=1.00)
     plt.tight_layout()
-    plt.savefig('slope_individual_gages.png', dpi=300, bbox_inches='tight')
+    plt.savefig('slope_individual_gages.png', dpi=600, bbox_inches='tight')
     plt.show()
 
 
@@ -5571,7 +5571,7 @@ def plot_r2_lag_analysis(data: pd.DataFrame) -> None:
     ax.set_ylim(bottom=0)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('rsquare_by_lag_lines.png', dpi=300, bbox_inches='tight')
+    plt.savefig('rsquare_by_lag_lines.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -5579,7 +5579,7 @@ def plot_r2_lag_analysis(data: pd.DataFrame) -> None:
                 cmap='YlOrRd', cbar_kws={'label': 'R² Value'}, ax=ax, vmin=0, vmax=1)
     ax.set_title('R² Heatmap Across Different Lag Periods', fontsize=14, fontweight='bold')
     plt.tight_layout()
-    plt.savefig('rsquare_heatmap.png', dpi=300, bbox_inches='tight')
+    plt.savefig('rsquare_heatmap.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -5590,7 +5590,7 @@ def plot_r2_lag_analysis(data: pd.DataFrame) -> None:
     ax.set_ylim(bottom=0)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('rsquare_boxplot.png', dpi=300, bbox_inches='tight')
+    plt.savefig('rsquare_boxplot.png', dpi=600, bbox_inches='tight')
     plt.show()
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
@@ -5610,5 +5610,5 @@ def plot_r2_lag_analysis(data: pd.DataFrame) -> None:
     plt.suptitle('Individual Gage R² Patterns Across Lag Periods',
                  fontsize=16, fontweight='bold', y=1.00)
     plt.tight_layout()
-    plt.savefig('rsquare_individual_gages.png', dpi=300, bbox_inches='tight')
+    plt.savefig('rsquare_individual_gages.png', dpi=600, bbox_inches='tight')
     plt.show()

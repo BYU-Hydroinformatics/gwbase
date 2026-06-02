@@ -151,7 +151,7 @@ for row, gage_short in enumerate(gage_list):
 
 plt.tight_layout()
 p1 = OUT_DIR / "slope_dist_by_lag.png"
-plt.savefig(p1, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(p1, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"\nSaved → {p1}")
 
@@ -226,7 +226,7 @@ for col, gage_short in enumerate(gage_list):
                           edgecolor="#CCCCCC"))
 
 p2 = OUT_DIR / "slope_flip_heatmap.png"
-plt.savefig(p2, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(p2, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig2)
 print(f"Saved → {p2}")
 
@@ -251,7 +251,7 @@ ax3.set_ylim(0, 100)
 ax3.grid(alpha=0.3)
 
 p3 = OUT_DIR / "pct_negative_vs_lag.png"
-plt.savefig(p3, dpi=160, bbox_inches="tight", facecolor="white")
+plt.savefig(p3, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig3)
 print(f"Saved → {p3}")
 

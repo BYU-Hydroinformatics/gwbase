@@ -326,7 +326,7 @@ for _, trow in term_gdf.iterrows():
                  fontsize=13, fontweight="bold", y=0.975)
 
     out_path = OUT / f"{gage_id}.png"
-    plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
+    plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  Saved → {out_path}")
 

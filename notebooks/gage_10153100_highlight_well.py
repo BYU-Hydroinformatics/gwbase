@@ -257,6 +257,6 @@ fig.suptitle(
 )
 
 out_path = OUT / f"{GAGE_ID}_highlight_well_{HIGHLIGHT_WELL_ID}.png"
-plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor="white")
+plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
 plt.close(fig)
 print(f"Saved → {out_path}")
