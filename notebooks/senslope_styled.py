@@ -20,14 +20,14 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 MIN_YEARS = 3    # matches config min_years
 
 GAGE_SHORT = {
-    '10126000': 'Bear River\nnr Corinne',
-    '10141000': 'Weber River\nnr Plain City',
+    '10126000': 'Bear River',
+    '10141000': 'Weber River',
     '10142000': 'Farmington Cr\nnr Farmington',
     '10143500': 'Centerville Cr\nnr Centerville',
-    '10152000': 'Spanish Fork\nnr Lake Shore',
+    '10152000': 'Spanish Fork',
     '10153100': 'Hobble Creek\n@ Springville',
-    '10163000': 'Provo River\n@ Provo',
-    '10168000': 'Little Cottonwood Cr',
+    '10163000': 'Provo River',
+    '10168000': 'Little Cottonwood',
     '10168500': 'Big Cottonwood Cr\nnr SLC',
     '10172700': 'Vernon Cr\nnr Vernon',
     '10172860': 'Warm Cr\nnr Gandy',
@@ -60,8 +60,8 @@ print(f"\nSaved: wte_senslope_filtered.csv ({len(wte_out)} rows)")
 # ── Fig 1: Streamflow Sen's slope horizontal bar chart ─────────────────────────
 sf_plot = sf_mk.reset_index().sort_values('sen_slope_cfs_yr')
 sf_plot['label'] = sf_plot.apply(
-    lambda r: f"{r['gage_id']} {GAGE_SHORT.get(r['gage_id'],'').replace(chr(10),' ')} "
-              + ('*' if r['p_value'] < 0.05 else ''),
+    lambda r: GAGE_SHORT.get(r['gage_id'], r['gage_id']).replace(chr(10), ' ')
+              + (' *' if r['p_value'] < 0.05 else ''),
     axis=1
 )
 colors = ['#D62728' if v < 0 else '#1F77B4' for v in sf_plot['sen_slope_cfs_yr']]

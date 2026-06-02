@@ -1175,7 +1175,8 @@ def plot_mi_results(
     mi_results: pd.DataFrame,
     output_dir: str = 'figures/mi',
     gage_id_col: str = 'gage_id',
-    figsize: Tuple[int, int] = (10, 6)
+    figsize: Tuple[int, int] = (10, 6),
+    basin_names: dict = None
 ) -> None:
     """
     Create MI distribution and by-gage summary plots.
@@ -1190,6 +1191,9 @@ def plot_mi_results(
         Column name for gage ID
     figsize : tuple, default (10, 6)
         Figure size
+    basin_names : dict, optional
+        Mapping from gage ID (str) to basin name for axis labels.
+        When provided, replaces numeric gage IDs with basin names on the x-axis.
 
     Example
     -------
@@ -1219,10 +1223,20 @@ def plot_mi_results(
 
     # MI by gage (box plot)
     if gage_id_col in mi_results.columns and mi_results[gage_id_col].nunique() > 1:
-        plt.figure(figsize=(max(8, mi_results[gage_id_col].nunique() * 1.2), 5))
-        sns.boxplot(data=mi_results, x=gage_id_col, y='mi')
+        plot_df = mi_results.copy()
+        if basin_names:
+            plot_df['_gage_label'] = plot_df[gage_id_col].astype(str).map(
+                lambda g: basin_names.get(g, g)
+            )
+            label_col = '_gage_label'
+            xlabel = 'Basin'
+        else:
+            label_col = gage_id_col
+            xlabel = 'Gage ID'
+        plt.figure(figsize=(max(8, plot_df[gage_id_col].nunique() * 1.2), 5))
+        sns.boxplot(data=plot_df, x=label_col, y='mi')
         plt.xticks(rotation=45, ha='right')
-        plt.xlabel('Gage ID')
+        plt.xlabel(xlabel)
         plt.ylabel('Mutual Information')
         plt.title('MI Distribution by Gage')
         plt.grid(True, alpha=0.3, axis='y')

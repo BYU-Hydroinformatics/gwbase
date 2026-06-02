@@ -514,7 +514,15 @@ def run_step_9_analysis(
         print("  Skipping lag MI comparison: data_lag_1yr.csv not found")
 
     # MI distribution charts
-    gwbase.plot_mi_results(mi_results, os.path.join(figures_dir, 'mi'))
+    _basin_names = {
+        '10126000': 'Bear River',
+        '10141000': 'Weber River',
+        '10152000': 'Spanish Fork',
+        '10163000': 'Provo River',
+        '10168000': 'Little Cottonwood',
+    }
+    gwbase.plot_mi_results(mi_results, os.path.join(figures_dir, 'mi'),
+                           basin_names=_basin_names)
 
     # High R² gages: filter and plot separately
     high_r2_filtered = gwbase.plot_high_r2_gages(

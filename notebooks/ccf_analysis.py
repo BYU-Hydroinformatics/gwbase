@@ -33,12 +33,12 @@ OUT_CSV   = RESULTS / "features"
 OUT_FIG.mkdir(parents=True, exist_ok=True)
 
 GAGE_NAME = {
-    '10126000': 'Bear River\nNr Corinne',
-    '10141000': 'Weber River\nNr Plain City',
-    '10152000': 'Spanish Fork\nNr Lake Shore',
-    '10153100': 'Hobble Creek\n@ Springville',
-    '10163000': 'Provo River\n@ Provo',
-    '10168000': 'Little Cottonwood\nCr @ Jordan R',
+    '10126000': 'Bear River',
+    '10141000': 'Weber River',
+    '10152000': 'Spanish Fork',
+    '10153100': 'Hobble Creek',
+    '10163000': 'Provo River',
+    '10168000': 'Little Cottonwood',
 }
 GAGE_FULL = {
     '10126000': 'Bear River Nr Corinne',

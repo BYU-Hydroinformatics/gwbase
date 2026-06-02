@@ -18,14 +18,14 @@ OUT_CSV = RESULTS / "features"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 GAGE_SHORT = {
-    '10126000': 'Bear River\nNr Corinne',
-    '10141000': 'Weber River\nNr Plain City',
+    '10126000': 'Bear River',
+    '10141000': 'Weber River',
     '10142000': 'Farmington Cr\nNr Farmington',
     '10143500': 'Centerville Cr\nNr Centerville',
-    '10152000': 'Spanish Fork\nNr Lake Shore',
+    '10152000': 'Spanish Fork',
     '10153100': 'Hobble Creek\n@ Springville',
-    '10163000': 'Provo River\n@ Provo',
-    '10168000': 'Little Cottonwood\nCr @ Jordan R',
+    '10163000': 'Provo River',
+    '10168000': 'Little Cottonwood',
     '10168500': 'Big Cottonwood\nCr Nr SLC',
     '10172700': 'Vernon Cr\nNr Vernon',
     '10172860': 'Warm Cr\nNr Gandy',
