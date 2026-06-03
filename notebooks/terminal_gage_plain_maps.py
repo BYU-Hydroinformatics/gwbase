@@ -111,7 +111,7 @@ for _, trow in term_gdf.iterrows():
         width_ratios=[0.72, 0.28],
         height_ratios=[0.50, 0.50],
         hspace=0.05, wspace=0.02,
-        left=0.01, right=0.99, top=0.92, bottom=0.04,
+        left=0.01, right=0.99, top=0.99, bottom=0.04,
     )
     ax     = fig.add_subplot(gs[:, 0])
     ax_ins = fig.add_subplot(gs[0, 1])
@@ -166,11 +166,19 @@ for _, trow in term_gdf.iterrows():
     ax_ins.scatter(trow.geometry.x, trow.geometry.y, s=200, marker="*",
                    facecolor=COL_GAGE, edgecolor="white", linewidth=0.8, zorder=7)
     ax_ins.set_aspect("equal")
-    ax_ins.set_axis_off()
+    ax_ins.set_xticks([])
+    ax_ins.set_yticks([])
     for spine in ax_ins.spines.values():
         spine.set_visible(True)
-        spine.set_edgecolor("#888888")
-        spine.set_linewidth(0.8)
+        spine.set_edgecolor("#333333")
+        spine.set_linewidth(1.2)
+
+    # Black rectangle marking the watershed extent in the inset
+    minx, miny, maxx, maxy = total_area.total_bounds
+    ax_ins.add_patch(mpatches.Rectangle(
+        (minx, miny), maxx - minx, maxy - miny,
+        facecolor="none", edgecolor="#CC0000", linewidth=1.0, zorder=8,
+    ))
 
     # ── Legend ────────────────────────────────────────────────────────────────
     legend_elements = [
