@@ -89,7 +89,6 @@ CITIES = {
     "Ogden":          (-111.973, 41.223),
     "Salt Lake City": (-111.891, 40.761),
     "Provo":          (-111.658, 40.234),
-    "Nephi":          (-111.831, 39.711),
 }
 cities_gdf = gpd.GeoDataFrame(
     {"name": list(CITIES.keys())},
@@ -222,9 +221,9 @@ legend_handles = [
 INS_Y0  = 0.015
 INS_H   = 0.110
 _sb_bot = INS_Y0 + INS_H + 0.025
-BAR_Y   = _sb_bot + 0.018
+BAR_Y   = _sb_bot + 0.038   # moved up closer to legend
 _sb_top = BAR_Y   + 0.010 + 0.018
-LEG_Y   = _sb_top + 0.022
+LEG_Y   = _sb_top + 0.006
 
 ins_x0 = BASIN_RIGHT_F - 0.075   # shift well left, overlapping with basin right area
 ins_w  = 0.234                    # keep same width
@@ -233,7 +232,7 @@ RIGHT_EDGE = ins_x0 + ins_w
 # ── Legend ────────────────────────────────────────────────────────────────────
 ax.legend(
     handles=legend_handles,
-    loc="lower right",
+    loc="lower center",
     fontsize=8,
     title="Legend",
     title_fontsize=8.5,
@@ -242,32 +241,41 @@ ax.legend(
     frameon=True,
     borderpad=0.7,
     labelspacing=0.35,
-    bbox_to_anchor=(RIGHT_EDGE - 0.005, LEG_Y),
+    bbox_to_anchor=(ins_x0 + ins_w / 2, LEG_Y),  # centre-aligned with scale bar & inset
 )
+
+# ── Measure rendered legend width → use it for scale bar & inset ─────────────
+fig.canvas.draw()
+_leg  = ax.get_legend()
+_lb   = _leg.get_window_extent()
+_ab   = ax.get_window_extent()
+el_x0 = (_lb.x0 - _ab.x0) / _ab.width   # legend left  in axes fraction
+el_w  = _lb.width            / _ab.width  # legend width in axes fraction
 
 # ── Scale bar (100 km) ────────────────────────────────────────────────────────
 scale_m  = 130_500            # 100 km corrected for WM at ~40°N
 bar_w_f  = scale_m / W
-bar_x0_f = ins_x0
+bar_x0_f = el_x0 + (el_w - bar_w_f) / 2   # centre bar within the frame
 
-ax.add_patch(mpatches.FancyBboxPatch(
-    (bar_x0_f - 0.005, _sb_bot), ins_w + 0.010, _sb_top - _sb_bot + 0.004,
-    boxstyle="square,pad=0", transform=trans,
-    facecolor="white", edgecolor="#aaaaaa", linewidth=0.5, alpha=0.92, zorder=9,
-))
+# Black bar only — no backing box, single "100 km" label centred below
 ax.add_patch(mpatches.FancyBboxPatch(
     (bar_x0_f, BAR_Y), bar_w_f, 0.010,
     boxstyle="square,pad=0", transform=trans,
     facecolor="#333333", edgecolor="#333333", zorder=10,
 ))
-ax.text(bar_x0_f,             BAR_Y - 0.005, "0",
-        ha="center", va="top", fontsize=7, transform=trans, zorder=10, color="#333333")
-ax.text(bar_x0_f + bar_w_f,   BAR_Y - 0.005, "100 km",
+ax.text(bar_x0_f + bar_w_f / 2, BAR_Y - 0.006, "100 km",
         ha="center", va="top", fontsize=7, transform=trans, zorder=10, color="#333333")
 
-# ── USA location inset ────────────────────────────────────────────────────────
-ax_ins = ax.inset_axes([ins_x0, INS_Y0, ins_w, INS_H])
-ax_ins.set_facecolor("white")
+# ── USA location inset — pixel-exact same width as legend via fig.add_axes ────
+# Convert legend display-px bounds → figure fraction so width matches exactly.
+_fb   = fig.get_window_extent()
+_ins_fig_left   = (_lb.x0 - _fb.x0) / _fb.width
+_ins_fig_width  = _lb.width           / _fb.width
+_ins_fig_bottom = (_ab.y0 + INS_Y0 * _ab.height - _fb.y0) / _fb.height
+_ins_fig_height = INS_H * _ab.height / _fb.height
+ax_ins = fig.add_axes([_ins_fig_left, _ins_fig_bottom,
+                        _ins_fig_width, _ins_fig_height])
+ax_ins.set_facecolor("none")
 
 try:
     if conus is None:
@@ -289,12 +297,11 @@ try:
     px, py = (bx1 - bx0) * 0.02, (by1 - by0) * 0.02
     ax_ins.set_xlim(bx0 - px, bx1 + px)
     ax_ins.set_ylim(by0 - py, by1 + py)
-    ax_ins.set_aspect("equal")
+    # No set_aspect — let CONUS fill the full allocated width
     ax_ins.set_xticks([])
     ax_ins.set_yticks([])
     for sp in ax_ins.spines.values():
-        sp.set_edgecolor("#888888")
-        sp.set_linewidth(0.7)
+        sp.set_visible(False)
     ax_ins.set_title("Location in USA", fontsize=6.5, pad=2, color="#333333")
 
 except Exception as e:

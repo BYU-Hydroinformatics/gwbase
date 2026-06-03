@@ -1,13 +1,14 @@
 """
-Recreate the Terminal Gages and Their Upstream Watersheds map for the Great Salt Lake Basin.
+Terminal Gages and Their Upstream Watersheds
+Plotting code ported from create_enhanced_watershed_visualization(),
+with gsl_lake.shp replacing the old lake.shp.
 """
 
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
-import numpy as np
+from matplotlib.patheffects import withStroke, Normal
 from pathlib import Path
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -15,194 +16,177 @@ BASE    = Path(__file__).parent.parent
 DATA    = BASE / "data"
 RESULTS = BASE / "results"
 
-# ── Load geodata ───────────────────────────────────────────────────────────────
-print("Loading geodata...")
-basin    = gpd.read_file(DATA / "raw/hydrography/gsl_basin.shp")
-catchment = gpd.read_file(DATA / "raw/hydrography/gsl_catchment.shp")
-streams  = gpd.read_file(DATA / "raw/hydrography/gslb_stream.shp")
-lakes    = gpd.read_file(DATA / "raw/hydrography/lake.shp")
-wells    = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
+# ── Load data ──────────────────────────────────────────────────────────────────
+print("Loading data...")
+terminal_mapping = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
+subbasin_gdf     = gpd.read_file(DATA / "raw/hydrography/gsl_catchment.shp")
+gage_df          = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")
+well_gdf         = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
+stream_gdf       = gpd.read_file(DATA / "raw/hydrography/gslb_stream.shp")
+lake_gdf         = gpd.read_file(DATA / "raw/hydrography/gsl_lake.shp")
 
-# ── Load tabular data ──────────────────────────────────────────────────────────
-all_gages = pd.read_csv(DATA / "raw/hydrography/gsl_nwm_gage.csv")   # 78 gages
-term_df   = pd.read_csv(RESULTS / "processed" / "terminal_gages.csv")        # terminal gages
-upstream  = pd.read_csv(RESULTS / "processed" / "terminal_gage_upstream_catchments.csv")
-# columns: Gage_ID, Gage_Name, Terminal_Catchment_ID, Upstream_Catchment_ID
+major_streams = stream_gdf[stream_gdf['strmOrder'] >= 4].copy()
+print(f"  Streams total: {len(stream_gdf)}, order >= 4: {len(major_streams)}")
 
-print(f"  Basin polys: {len(basin)}")
-print(f"  Catchments:  {len(catchment)}")
-print(f"  Terminal gages: {len(term_df)}")
-print(f"  All gages:   {len(all_gages)}")
-print(f"  Wells:       {len(wells)}")
+# ── Preprocessing ──────────────────────────────────────────────────────────────
+linkno_col = 'linkno' if 'linkno' in subbasin_gdf.columns else 'LINKNO'
 
-# ── Reproject everything to Web Mercator for contextily ───────────────────────
-TARGET_CRS = "EPSG:3857"
-basin     = basin.to_crs(TARGET_CRS)
-catchment = catchment.to_crs(TARGET_CRS)
-streams   = streams.to_crs(TARGET_CRS)
-lakes     = lakes.to_crs(TARGET_CRS)
-wells     = wells.to_crs(TARGET_CRS)
+if 'Gage_ID' in terminal_mapping.columns:
+    terminal_mapping = terminal_mapping.rename(columns={
+        'Gage_ID': 'gage_id',
+        'Upstream_Catchment_ID': 'upstream_catchment_id'
+    })
 
-# Build GeoDataFrame for all gages
-all_gages_gdf = gpd.GeoDataFrame(
-    all_gages,
-    geometry=gpd.points_from_xy(all_gages["longitude"], all_gages["latitude"]),
-    crs="EPSG:4326"
-).to_crs(TARGET_CRS)
+terminal_mapping = terminal_mapping.dropna(subset=['upstream_catchment_id'])
+terminal_mapping['gage_id'] = terminal_mapping['gage_id'].astype(int)
+terminal_mapping['upstream_catchment_id'] = terminal_mapping['upstream_catchment_id'].astype(int)
 
-# Build GeoDataFrame for terminal gages (lat/lon from all_gages)
-term_info = term_df.merge(
-    all_gages[["id", "latitude", "longitude"]],
-    on="id", how="left"
-)
-term_gdf = gpd.GeoDataFrame(
-    term_info,
-    geometry=gpd.points_from_xy(term_info["longitude"], term_info["latitude"]),
-    crs="EPSG:4326"
-).to_crs(TARGET_CRS)
+gage_df['id'] = gage_df['id'].astype(int)
+subbasin_gdf = subbasin_gdf.dropna(subset=[linkno_col])
+subbasin_gdf[linkno_col] = subbasin_gdf[linkno_col].astype(int)
 
-print("Terminal gages:")
-for _, r in term_gdf.iterrows():
-    print(f"  {r['id']} - {r['name']}")
+terminal_gage_ids = terminal_mapping['gage_id'].unique().tolist()
+terminal_gages    = gage_df[gage_df['id'].isin(terminal_gage_ids)].copy()
 
-# ── Assign a distinct color to each terminal gage ────────────────────────────
-COLORS = [
-    "#E91E8C",  # pink-red      (Bear River / Corinne)
-    "#8BC34A",  # lime green    (Weber River)
-    "#009688",  # teal          (Farmington Cr)
-    "#673AB7",  # deep purple   (Centerville Cr)
-    "#1565C0",  # dark blue     (Spanish Fork -- not in term_df, skip)
-    "#F57F17",  # amber         (Hobble Creek -- not in term_df, skip)
-    "#E91E63",  # magenta       (Provo River -- not in term_df, skip)
-    "#CDDC39",  # lime-yellow   (Little Cottonwood)
-    "#00BCD4",  # cyan          (Big Cottonwood)
-    "#FF5722",  # deep orange   (Vernon Cr)
-    "#004D40",  # dark teal     (Warm Cr)
-    "#BCAAA4",  # tan           (Dunn Cr)
+available_catchments = set(subbasin_gdf[linkno_col].unique())
+terminal_gage_catchments = {}
+for gage_id in terminal_gage_ids:
+    up = terminal_mapping[terminal_mapping['gage_id'] == gage_id]['upstream_catchment_id'].tolist()
+    valid = [c for c in up if c in available_catchments]
+    if valid:
+        terminal_gage_catchments[gage_id] = set(valid)
+
+# Clip wells to basin
+subbasin_union = subbasin_gdf.dissolve()
+well_gdf_proj  = well_gdf.to_crs(subbasin_gdf.crs)
+well_in_basin  = gpd.sjoin(
+    well_gdf_proj, subbasin_union[['geometry']],
+    how='inner', predicate='within'
+).drop(columns=['index_right'])
+print(f"  Wells total: {len(well_gdf)}, within subbasin: {len(well_in_basin)}")
+
+# ── Reproject to Web Mercator ──────────────────────────────────────────────────
+subbasin_web      = subbasin_gdf.to_crs('EPSG:3857')
+major_streams_web = major_streams.to_crs('EPSG:3857')
+lake_web          = lake_gdf.to_crs('EPSG:3857')
+well_web          = well_in_basin.to_crs('EPSG:3857')
+
+terminal_gages_web = gpd.GeoDataFrame(
+    terminal_gages,
+    geometry=gpd.points_from_xy(terminal_gages['longitude'], terminal_gages['latitude']),
+    crs='EPSG:4326'
+).to_crs('EPSG:3857')
+
+# ── Colors ─────────────────────────────────────────────────────────────────────
+bright_vivid_colors = [
+    '#EF4444', '#10B981', '#3B82F6', '#FBBF24',
+    '#8B5CF6', '#06B6D4', '#F59E0B', '#EC4899',
+    '#14B8A6', '#A855F7', '#6366F1', '#84CC16',
 ]
+terminal_gage_colors = dict(zip(terminal_gage_ids, bright_vivid_colors[:len(terminal_gage_ids)]))
 
-# Use as many colors as terminal gages
-term_gdf = term_gdf.reset_index(drop=True)
-n_term = len(term_gdf)
-colors = COLORS[:n_term]
+BG_COLOR     = 'white'
+BASIN_FILL   = '#FAFBFC'
+BASIN_EDGE   = '#E8ECF0'
+STREAM_COLOR = '#0369A1'
+LAKE_COLOR   = '#38BDF8'
+WELL_COLOR   = '#BE185D'
+OUTLINE_COLOR = '#475569'
 
-# ── Build union of upstream catchments per terminal gage ─────────────────────
-print("Building upstream watershed polygons...")
-watershed_gdfs = []
-for i, (_, trow) in enumerate(term_gdf.iterrows()):
-    gage_id = trow["id"]
-    up_ids  = upstream.loc[upstream["Gage_ID"] == gage_id, "Upstream_Catchment_ID"].astype(int).tolist()
-    terminal_catch_id = int(trow["catchment_id"])
-    all_ids = set(up_ids) | {terminal_catch_id}
+# ── Figure ─────────────────────────────────────────────────────────────────────
+fig, ax = plt.subplots(1, 1, figsize=(22, 16))
+fig.patch.set_facecolor(BG_COLOR)
+ax.set_facecolor(BG_COLOR)
 
-    sub = catchment[catchment["linkno"].astype(int).isin(all_ids)].copy()
-    if sub.empty:
+# 1. Subbasin background
+subbasin_web.plot(ax=ax, color=BASIN_FILL, edgecolor=BASIN_EDGE,
+                  linewidth=0.2, alpha=1.0, zorder=1)
+
+# 2. Colored upstream watersheds
+for gage_id in terminal_gage_ids:
+    if gage_id not in terminal_gage_catchments:
         continue
-    dissolved = sub.dissolve()
-    dissolved["gage_id"]   = gage_id
-    dissolved["gage_name"] = trow["name"]
-    dissolved["color"]     = colors[i]
-    dissolved["idx"]       = i
-    watershed_gdfs.append(dissolved)
+    upstream_basins = subbasin_web[
+        subbasin_web[linkno_col].isin(list(terminal_gage_catchments[gage_id]))
+    ]
+    if not upstream_basins.empty:
+        upstream_basins.plot(ax=ax, color=terminal_gage_colors[gage_id],
+                             alpha=0.75, edgecolor='none', zorder=2)
 
-watershed_gdf = gpd.GeoDataFrame(
-    pd.concat(watershed_gdfs, ignore_index=True),
-    crs=TARGET_CRS
-)
-print(f"  Watersheds built: {len(watershed_gdf)}")
+# Basin outer boundary
+subbasin_web.dissolve().boundary.plot(ax=ax, color=OUTLINE_COLOR,
+                                      linewidth=2.2, alpha=0.85, zorder=2.5)
 
-# ── Plot ──────────────────────────────────────────────────────────────────────
-print("Plotting...")
-fig, ax = plt.subplots(figsize=(12, 14))
+# 3. Lakes
+lake_web.plot(ax=ax, color=LAKE_COLOR, edgecolor='#38BDF8',
+              linewidth=0.5, alpha=0.6, zorder=3)
 
-# 1. Basin boundary (faint outline)
-basin.plot(ax=ax, facecolor="none", edgecolor="#aaaaaa", linewidth=0.8, zorder=1)
+# 4. Streams — width hierarchy by Strahler order
+ms = major_streams_web.copy()
+ms['strmOrder'] = pd.to_numeric(ms['strmOrder'], errors='coerce')
+ms['__lw__'] = 1.5 + 0.6 * (ms['strmOrder'] - 4).clip(lower=0)
+for lw_val, grp in ms.groupby('__lw__'):
+    grp.plot(ax=ax, color=STREAM_COLOR, linewidth=float(lw_val), alpha=0.9, zorder=4)
 
-# 2. Upstream watersheds (colored, semi-transparent)
-for _, wrow in watershed_gdf.iterrows():
-    gpd.GeoDataFrame([wrow], crs=TARGET_CRS).plot(
-        ax=ax,
-        facecolor=wrow["color"],
-        edgecolor="white",
-        linewidth=0.3,
-        alpha=0.65,
-        zorder=2,
-    )
+# 5. Wells
+well_web.plot(ax=ax, marker='o', markersize=8, color=WELL_COLOR,
+              edgecolor='none', alpha=0.80, zorder=5, rasterized=True)
 
-# 3. Streams
-streams.plot(ax=ax, color="#1565C0", linewidth=0.4, alpha=0.7, zorder=3)
+# 6. Terminal gage stars
+terminal_gage_info = []
+for _, row in terminal_gages_web.iterrows():
+    gage_id = int(row['id'])
+    if gage_id not in terminal_gage_catchments:
+        continue
+    c = terminal_gage_colors[gage_id]
+    star = ax.scatter([row.geometry.x], [row.geometry.y],
+                      c=c, marker='*', s=600,
+                      edgecolors='none', linewidths=0, alpha=1.0, zorder=10)
+    star.set_path_effects([
+        withStroke(linewidth=8,  foreground='#000000', alpha=0.35),
+        withStroke(linewidth=5,  foreground='#000000', alpha=0.55),
+        withStroke(linewidth=2.5, foreground='white',  alpha=1.0),
+        Normal()
+    ])
+    terminal_gage_info.append({'id': gage_id, 'name': row.get('name', f'Gage {gage_id}'), 'color': c})
 
-# 4. Lakes
-lakes.plot(ax=ax, facecolor="#90CAF9", edgecolor="#64B5F6", linewidth=0.4, alpha=0.8, zorder=4)
-
-# 5. All gages (orange circles)
-all_gages_gdf.plot(ax=ax, color="#FF6D00", markersize=28, marker="o",
-                   edgecolor="white", linewidth=0.5, zorder=5)
-
-# 6. Terminal gages (colored stars)
-STAR_SIZE = 220
-for i, (_, trow) in enumerate(term_gdf.iterrows()):
-    ax.scatter(
-        trow.geometry.x, trow.geometry.y,
-        s=STAR_SIZE, marker="*",
-        facecolor=colors[i], edgecolor="black",
-        linewidth=0.6, zorder=6
-    )
-
-# ── Add basemap ───────────────────────────────────────────────────────────────
-try:
-    import contextily as ctx
-    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, zoom=8, alpha=0.6)
-    print("Basemap added.")
-except Exception as e:
-    print(f"Basemap skipped: {e}")
-    ax.set_facecolor("#f0f0f0")
-
-# ── Legend ────────────────────────────────────────────────────────────────────
+# ── Legend ─────────────────────────────────────────────────────────────────────
 legend_elements = [
-    mlines.Line2D([0], [0], marker="o", color="w", markerfacecolor="#FF6D00",
-                  markersize=8, markeredgecolor="white", label=f"All Gages ({len(all_gages)})"),
-    mlines.Line2D([0], [0], color="#1565C0", linewidth=1.5, label="Stream Network"),
-    mpatches.Patch(facecolor="#90CAF9", edgecolor="#64B5F6", label=f"Lakes ({len(lakes)})"),
-    mpatches.Patch(facecolor="#cccccc", edgecolor="none", alpha=0.5, label="Upstream Watersheds"),
+    plt.Line2D([0], [0], color=STREAM_COLOR, linewidth=3.0, label='Major Streams'),
+    mpatches.Patch(facecolor=LAKE_COLOR, edgecolor='#38BDF8', alpha=0.6, label='Lakes'),
+    mpatches.Patch(facecolor='#94A3B8', edgecolor='none', alpha=0.65, label='Upstream Watersheds'),
+    plt.Line2D([0], [0], marker='o', color='none', markerfacecolor=WELL_COLOR,
+               markeredgecolor='none', markersize=9,
+               label=f'Groundwater Wells (n={len(well_in_basin)})'),
+    # blank spacer
+    mpatches.Patch(facecolor='none', edgecolor='none', label=''),
+    mpatches.Patch(facecolor='none', edgecolor='none',
+                   label=f'Terminal Gages ({len(terminal_gage_info)}):'),
 ]
-legend_elements.append(mpatches.Patch(facecolor="none", edgecolor="none", label=""))
-legend_elements.append(mpatches.Patch(facecolor="none", edgecolor="none", label=f"Terminal Gages ({n_term}):"))
-
-for i, (_, trow) in enumerate(term_gdf.iterrows()):
-    label = f"{trow['id']} - {trow['name'][:35]}..."
+for entry in terminal_gage_info:
+    name_trunc = entry['name'][:38] + '...' if len(entry['name']) > 38 else entry['name']
     legend_elements.append(
-        mlines.Line2D([0], [0], marker="*", color="w",
-                      markerfacecolor=colors[i], markersize=12,
-                      markeredgecolor="black", markeredgewidth=0.5,
-                      label=label)
+        plt.Line2D([0], [0], marker='*', color='w',
+                   markerfacecolor=entry['color'], markersize=12,
+                   markeredgecolor='black', markeredgewidth=0.5,
+                   label=f"{entry['id']} - {name_trunc}")
     )
 
-legend = ax.legend(
-    handles=legend_elements,
-    loc="lower right",
-    fontsize=6.5,
-    framealpha=0.9,
-    edgecolor="#aaaaaa",
-    title="Map Elements & Terminal Gages",
-    title_fontsize=7.5,
-    frameon=True,
-    borderpad=0.8,
-)
+legend = ax.legend(handles=legend_elements, loc='lower right', fontsize=6.5,
+                   title='Map Elements & Terminal Gages', title_fontsize=7.5,
+                   frameon=True, framealpha=0.9,
+                   facecolor='white', edgecolor='#aaaaaa', labelcolor='#1E293B',
+                   borderpad=0.8)
+legend.get_title().set_color('#1E293B')
+legend.get_title().set_fontweight('bold')
 
-# ── Title ─────────────────────────────────────────────────────────────────────
-n_wells = len(wells)
-ax.set_title(
-    f"Terminal Gages and Their Upstream Watersheds\nGreat Salt Lake Basin\n"
-    f"{n_term} Terminal Gages  •  {len(all_gages)} Total Gages  •  {len(lakes)} Lakes  •  {n_wells} Wells",
-    fontsize=13, fontweight="bold", pad=12
-)
-
-ax.set_axis_off()
+ax.set_aspect('equal')
+ax.axis('off')
+ax.margins(0.01)
 plt.tight_layout()
 
-(RESULTS / "analysis" / "maps" / "overview").mkdir(parents=True, exist_ok=True)
 out = RESULTS / "analysis" / "maps" / "overview" / "terminal_gages_map.png"
-plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
+out.parent.mkdir(parents=True, exist_ok=True)
+plt.savefig(out, dpi=600, bbox_inches='tight', facecolor=BG_COLOR, edgecolor='none')
 print(f"Saved → {out}")
 plt.show()
