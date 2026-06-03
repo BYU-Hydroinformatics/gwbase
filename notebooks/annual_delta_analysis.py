@@ -141,9 +141,6 @@ gage_short = {
 
 fig, axes = plt.subplots(5, 2, figsize=(13, 16),
                           gridspec_kw={"hspace": 0.55, "wspace": 0.35})
-fig.suptitle("Slope distribution: Monthly delta vs Annual delta\n"
-             "Red = negative slope,  Blue = positive slope",
-             fontsize=13, fontweight="bold")
 
 for row, gname in enumerate(gage_order):
     m_sub = monthly_reg[monthly_reg["gage_name"] == gname]["slope"].values
@@ -167,12 +164,6 @@ for row, gname in enumerate(gage_order):
             patch.set_facecolor("#E24A33" if left < 0 else "#4C72B0")
             patch.set_alpha(0.75)
         ax.axvline(0, color="black", linewidth=1.2, linestyle="--")
-        ax.set_title(
-            f"{gshort} — {label}\n"
-            f"neg {n_neg} ({100*n_neg/len(slopes):.0f}%)  "
-            f"pos {n_pos} ({100*n_pos/len(slopes):.0f}%)",
-            fontsize=8, fontweight="bold"
-        )
         ax.grid(axis="y", alpha=0.25)
         ax.tick_params(labelsize=7)
         if col == 0:
@@ -223,8 +214,6 @@ for gname in gage_order:
 
     ax.set_xlabel("ΔWTE annual (ft/yr)", fontsize=11)
     ax.set_ylabel("ΔQ annual (cfs/yr)", fontsize=11)
-    ax.set_title(f"{gname}\nΔQ vs ΔWTE — Annual delta (all wells)",
-                 fontsize=10, fontweight="bold")
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = SCAT_DIR / f"{gname.split()[0].lower()}.png"
@@ -282,12 +271,9 @@ def plot_per_well_subplots(gage_name, top_ids, out_dir, metric_vals=None):
         ax.set_ylabel("ΔQ (cfs/yr)", fontsize=8)
         mv_str = (f"  R²={metric_vals[str(wid)]:.3f}"
                   if metric_vals and str(wid) in metric_vals else "")
-        ax.set_title(f"#{i+1}  {str(wid)}{mv_str}", fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
     for j in range(n, len(axes_flat)):
         axes_flat[j].set_visible(False)
-    fig.suptitle(f"{gage_name}\nΔQ vs ΔWTE per well — Annual delta (top {n} by R²)",
-                 fontsize=10, fontweight="bold")
     plt.tight_layout()
     out = out_dir / f"{gage_name.split()[0].lower()}.png"
     plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
@@ -343,8 +329,6 @@ def plot_combined_fit(gage_name, top_ids, out_dir):
               title_fontsize=7.5)
     ax.set_xlabel("ΔWTE annual (ft/yr)", fontsize=11)
     ax.set_ylabel("ΔQ annual (cfs/yr)", fontsize=11)
-    ax.set_title(f"{gage_name}\nΔQ vs ΔWTE — Annual delta (top {len(wells)} by R², per-well fit)",
-                 fontsize=10, fontweight="bold")
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = out_dir / f"{gage_name.split()[0].lower()}.png"

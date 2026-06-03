@@ -187,7 +187,6 @@ for obs in obs_options:
 ax.axvline(3, color='black', linestyle=':', linewidth=1.2, alpha=0.7)
 ax.set_xlabel('Minimum record length (years)')
 ax.set_ylabel('Wells retained (%)')
-ax.set_title('Temporal quality filter sensitivity')
 ax.set_xticks(year_options)
 ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%g%%'))
 # Place legend below the plot to avoid overlapping lines
@@ -233,7 +232,6 @@ bars = ax2.bar(
 )
 ax2.set_xlabel('Elevation buffer below streambed')
 ax2.set_ylabel('Wells retained (%)')
-ax2.set_title('Elevation buffer filter sensitivity')
 ax2.yaxis.set_major_formatter(mticker.FormatStrFormatter('%g%%'))
 ax2.grid(True, axis='y', alpha=0.3)
 
@@ -276,7 +274,6 @@ ax3.set_xticks(range(len(delta_dist)))
 ax3.set_xticklabels(delta_dist['delta_bin'].astype(str), rotation=35, ha='right', fontsize=9)
 ax3.set_ylabel('Monthly records (%)')
 ax3.set_xlabel('Δ elevation: streambed minus WTE (m)  [positive = WTE below stream]')
-ax3.set_title('Distribution of Δ elevation (baseline wells, post-interpolation)')
 ax3.grid(True, axis='y', alpha=0.3)
 
 # Mark cutoff at 30m

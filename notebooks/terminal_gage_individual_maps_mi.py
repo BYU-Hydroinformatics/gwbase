@@ -252,7 +252,6 @@ for _, trow in term_gdf.iterrows():
                    facecolor=COL_GAGE, edgecolor="white", linewidth=0.8, zorder=7)
     ax_ins.set_aspect("equal")
     ax_ins.set_axis_off()
-    ax_ins.set_title("Location within GSLB", fontsize=9, fontweight="bold", pad=4)
     for spine in ax_ins.spines.values():
         spine.set_visible(True)
         spine.set_edgecolor("#888888")
@@ -276,10 +275,6 @@ for _, trow in term_gdf.iterrows():
                  fontsize=6.5, color="#555555", ha="left", va="top")
         cax.text(1.0, -0.7, f"map max={gage_mi_max:.3f}", transform=cax.transAxes,
                  fontsize=6.5, color="#555555", ha="right", va="top")
-        ax_cbar.set_title(
-            f"Wells with MI data: {len(has_mi)}  |  Top {len(top_wells)} highlighted",
-            fontsize=7.5, pad=2,
-        )
     else:
         ax_cbar.text(0.5, 0.5, "No MI data\nfor this gage",
                      ha="center", va="center", fontsize=9,
@@ -322,8 +317,6 @@ for _, trow in term_gdf.iterrows():
                         handlelength=1.8, handleheight=1.1)
     ax_leg.add_artist(leg)
 
-    fig.suptitle(f"Terminal Gage {gage_id}  —  {gage_name}",
-                 fontsize=13, fontweight="bold", y=0.975)
 
     out_path = OUT / f"{gage_id}.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")

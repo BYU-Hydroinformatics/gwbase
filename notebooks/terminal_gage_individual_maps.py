@@ -268,7 +268,6 @@ for _, trow in term_gdf.iterrows():
                    facecolor=COL_GAGE, edgecolor="white", linewidth=0.8, zorder=7)
     ax_ins.set_aspect("equal")
     ax_ins.set_axis_off()
-    ax_ins.set_title("Location within GSLB", fontsize=9, fontweight="bold", pad=4)
     for spine in ax_ins.spines.values():
         spine.set_visible(True)
         spine.set_edgecolor("#888888")
@@ -297,11 +296,6 @@ for _, trow in term_gdf.iterrows():
                  fontsize=6.5, color="#555555", ha="right", va="top")
 
         n_r2_wells = len(has_r2)
-        ax_cbar.set_title(
-            f"Wells with R² data: {n_r2_wells}  |  "
-            f"Top {len(top_wells)} highlighted",
-            fontsize=7.5, pad=2,
-        )
     else:
         ax_cbar.text(0.5, 0.5, "No R² data\nfor this gage",
                      ha="center", va="center", fontsize=9,
@@ -345,8 +339,6 @@ for _, trow in term_gdf.iterrows():
     ax_leg.add_artist(leg)
 
     # ── Figure title ──────────────────────────────────────────────────────────
-    fig.suptitle(f"Terminal Gage {gage_id}  —  {gage_name}",
-                 fontsize=13, fontweight="bold", y=0.975)
 
     out_path = OUT / f"{gage_id}.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")

@@ -302,7 +302,6 @@ try:
     ax_ins.set_yticks([])
     for sp in ax_ins.spines.values():
         sp.set_visible(False)
-    ax_ins.set_title("Location in USA", fontsize=6.5, pad=2, color="#333333")
 
 except Exception as e:
     print(f"  Inset skipped: {e}")

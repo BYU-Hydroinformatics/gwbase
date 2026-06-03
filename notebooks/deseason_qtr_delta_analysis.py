@@ -171,8 +171,6 @@ for gname in GAGE_SHORT:
     ax.axvline(0,color="#CCCCCC",linewidth=0.7,linestyle=":")
     ax.set_xlabel("ΔWTE anomaly diff (ft)", fontsize=11)
     ax.set_ylabel("ΔQ anomaly diff (cfs)", fontsize=11)
-    ax.set_title(f"{gname}\nΔQ vs ΔWTE — Deseasonalized quarterly consecutive delta",
-                 fontsize=10, fontweight="bold")
     ax.legend(fontsize=9, loc="upper left", framealpha=0.85)
     ax.grid(True, alpha=0.2)
     plt.tight_layout()
@@ -228,14 +226,10 @@ for gname, grp in reg_df.groupby("gage_name"):
         ax.set_xlabel("ΔWTE anom (ft)", fontsize=8)
         ax.set_ylabel("ΔQ anom (cfs)", fontsize=8)
         mv = mvals.get(str(wid))
-        ax.set_title(f"#{i+1}  {wid}" + (f"  R²={mv:.3f}" if mv else ""),
-                     fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
         if i==0: ax.legend(fontsize=6.5, loc="upper left", framealpha=0.8)
     for j in range(n, len(axes_flat)):
         axes_flat[j].set_visible(False)
-    fig.suptitle(f"{gname}\nΔQ vs ΔWTE per well (top {n} by R², deseasonalized qtr delta)",
-                 fontsize=10, fontweight="bold")
     plt.tight_layout()
     out = T10_DIR / f"{gname.split()[0].lower()}.png"
     plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
@@ -283,8 +277,6 @@ for gname, grp in reg_df.groupby("gage_name"):
               title=f"Top {len(wells)} wells by R²",title_fontsize=7.5)
     ax.set_xlabel("ΔWTE anomaly diff (ft)", fontsize=11)
     ax.set_ylabel("ΔQ anomaly diff (cfs)", fontsize=11)
-    ax.set_title(f"{gname}\nΔQ vs ΔWTE — Deseasonalized qtr delta (top {len(wells)}, per-well fit)",
-                 fontsize=10, fontweight="bold")
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = T10F_DIR / f"{gname.split()[0].lower()}.png"

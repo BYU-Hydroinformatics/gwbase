@@ -64,8 +64,6 @@ C = {"Negative": "#E24A33", "Positive": "#4C72B0"}
 
 # ── Figure layout ────────────────────────────────────────────────────────────
 fig = plt.figure(figsize=(16, 14))
-fig.suptitle("Negative vs Positive Slope Wells — Feature Comparison\n(Top-10 R² table)",
-             fontsize=14, fontweight="bold", y=0.98)
 
 gs = fig.add_gridspec(3, 3, hspace=0.50, wspace=0.38)
 
@@ -88,7 +86,6 @@ for i, sign in enumerate(["Negative", "Positive"]):
 ax_a.set_xticks(x)
 ax_a.set_xticklabels(gage_order, fontsize=9)
 ax_a.set_ylabel("Number of wells", fontsize=10)
-ax_a.set_title("A  Per-gage distribution of slope sign", fontsize=10, fontweight="bold")
 ax_a.legend(fontsize=9)
 ax_a.set_ylim(0, counts.values.max() + 2)
 ax_a.grid(axis="y", alpha=0.3)
@@ -110,7 +107,6 @@ for i, (vals, sign) in enumerate(zip(data_b, ["Negative","Positive"])):
 u, p = mannwhitneyu(data_b[0], data_b[1], alternative="two-sided")
 ax_b.set_xticklabels(["Negative", "Positive"], fontsize=9)
 ax_b.set_ylabel("R²", fontsize=10)
-ax_b.set_title(f"B  R² distribution\n(MW p={p:.3f})", fontsize=10, fontweight="bold")
 ax_b.grid(axis="y", alpha=0.3)
 
 # ── Panel C: n_observations violin ───────────────────────────────────────────
@@ -128,7 +124,6 @@ u, p = mannwhitneyu(data_c[0], data_c[1], alternative="two-sided")
 ax_c.set_xticks([1,2])
 ax_c.set_xticklabels(["Negative","Positive"], fontsize=9)
 ax_c.set_ylabel("n_observations", fontsize=10)
-ax_c.set_title(f"C  Observation count\n(MW p={p:.3f})", fontsize=10, fontweight="bold")
 ax_c.grid(axis="y", alpha=0.3)
 
 # ── Panel D: |Pearson r| comparison ──────────────────────────────────────────
@@ -148,7 +143,6 @@ ax_d.axhline(0, color="grey", linewidth=0.8, linestyle="--")
 u, p = mannwhitneyu(data_d[0], data_d[1], alternative="two-sided")
 ax_d.set_xticklabels(["Negative","Positive"], fontsize=9)
 ax_d.set_ylabel("Pearson r", fontsize=10)
-ax_d.set_title(f"D  Pearson r (ΔQ ~ ΔWTE)\n(MW p={p:.4f})", fontsize=10, fontweight="bold")
 ax_d.grid(axis="y", alpha=0.3)
 
 # ── Panel E: WTE long-term trend ─────────────────────────────────────────────
@@ -172,7 +166,6 @@ ax_e.axhline(0, color="grey", linewidth=0.8, linestyle="--", label="No trend")
 u, p = mannwhitneyu(data_e[0], data_e[1], alternative="two-sided")
 ax_e.set_xticklabels(["Negative","Positive"], fontsize=9)
 ax_e.set_ylabel("WTE trend (ft/yr)", fontsize=10)
-ax_e.set_title(f"E  WTE long-term trend\n(MW p={p:.3f})", fontsize=10, fontweight="bold")
 ax_e.grid(axis="y", alpha=0.3)
 
 # ── Panel F: delta_elev distribution (KDE/histogram overlay) ─────────────────
@@ -182,7 +175,6 @@ for sign in ["Negative", "Positive"]:
     ax_f.hist(vals, bins=15, color=C[sign], alpha=0.55, label=sign, density=True)
 ax_f.set_xlabel("delta_elev (ft) = well elevation − reach elevation", fontsize=9)
 ax_f.set_ylabel("Density", fontsize=10)
-ax_f.set_title("F  Well depth relative to stream", fontsize=10, fontweight="bold")
 ax_f.legend(fontsize=9)
 ax_f.grid(axis="y", alpha=0.3)
 ax_f.axvline(0, color="grey", linewidth=0.8, linestyle="--")
@@ -210,7 +202,6 @@ for i, sign in enumerate(["Negative","Positive"]):
 ax_g.set_xticks(x_g)
 ax_g.set_xticklabels(present_bins, fontsize=8.5, rotation=30, ha="right")
 ax_g.set_ylabel("Number of wells", fontsize=10)
-ax_g.set_title("G  Elevation bin distribution (well vs. reach)", fontsize=10, fontweight="bold")
 ax_g.legend(fontsize=9)
 ax_g.grid(axis="y", alpha=0.3)
 ax_g.axvline(3.5, color="grey", linewidth=1.0, linestyle="--", alpha=0.6)

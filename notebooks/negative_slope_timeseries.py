@@ -107,11 +107,6 @@ for well_id in unique_wells:
 
     ax.set_xlabel("Date", fontsize=10)
     ax.set_ylabel("WTE (ft)", fontsize=10)
-    ax.set_title(
-        f"Well {well_id}  —  Gage {gage_id}  ({gage_name})\n"
-        f"Raw measurements + PCHIP monthly interpolation",
-        fontsize=10, fontweight="bold"
-    )
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
     ax.xaxis.set_major_locator(mdates.YearLocator(5))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")

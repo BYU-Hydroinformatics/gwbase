@@ -167,8 +167,6 @@ for gname in GAGE_SHORT:
         continue
 
     fig, ax = plt.subplots(figsize=(9, 6))
-    fig.suptitle(f"{gname}\nΔQ vs ΔWTE — Same-quarter YoY delta (all wells, all quarters)",
-                 fontsize=11, fontweight="bold")
 
     # scatter: colour by quarter, one point per well-year-quarter
     for quarter in QUARTER_ORDER:
@@ -265,15 +263,11 @@ for (gname, quarter), grp in reg_df.groupby(["gage_name","quarter"]):
         ax.set_ylabel("ΔQ (cfs/yr)", fontsize=8)
         mv = mvals.get(str(wid), None)
         mv_str = f"  R²={mv:.3f}" if mv is not None else ""
-        ax.set_title(f"#{i+1}  {str(wid)}{mv_str}", fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
 
     for j in range(n, len(axes_flat)):
         axes_flat[j].set_visible(False)
 
-    fig.suptitle(f"{gname} — {QUARTER_LABEL[quarter]}\n"
-                 f"ΔQ vs ΔWTE per well (top {n} by R², quarterly delta)",
-                 fontsize=10, fontweight="bold")
     plt.tight_layout()
     out = T10_DIR / f"{gname.split()[0].lower()}_{quarter.lower()}.png"
     plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
@@ -339,9 +333,6 @@ for (gname, quarter), grp in reg_df.groupby(["gage_name","quarter"]):
               title_fontsize=7.5)
     ax.set_xlabel("ΔWTE quarterly (ft/yr)", fontsize=11)
     ax.set_ylabel("ΔQ quarterly (cfs/yr)", fontsize=11)
-    ax.set_title(f"{gname} — {QUARTER_LABEL[quarter]}\n"
-                 f"ΔQ vs ΔWTE — Quarterly delta (top {len(wells)} by R², per-well fit)",
-                 fontsize=10, fontweight="bold")
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = T10F_DIR / f"{gname.split()[0].lower()}_{quarter.lower()}.png"

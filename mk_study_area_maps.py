@@ -75,7 +75,7 @@ ax.legend(handles=legend_elements, loc="lower right", fontsize=13,
 
 plt.tight_layout(pad=2.0)
 out1 = OUT / "gslb_wells_map.png"
-plt.savefig(out1, dpi=300, bbox_inches="tight", facecolor="white")
+plt.savefig(out1, dpi=600, bbox_inches="tight", facecolor="white")
 print(f"Saved → {out1}")
 plt.show()
 
@@ -121,6 +121,6 @@ ax.legend(handles=legend_elements, loc="lower right", fontsize=13,
 
 plt.tight_layout(pad=2.0)
 out2 = OUT / "gslb_streams_gages_map.png"
-plt.savefig(out2, dpi=300, bbox_inches="tight", facecolor="white")
+plt.savefig(out2, dpi=600, bbox_inches="tight", facecolor="white")
 print(f"Saved → {out2}")
 plt.show()

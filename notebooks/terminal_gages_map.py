@@ -157,11 +157,10 @@ legend_elements = [
     mpatches.Patch(facecolor='#94A3B8', edgecolor='none', alpha=0.65, label='Upstream Watersheds'),
     plt.Line2D([0], [0], marker='o', color='none', markerfacecolor=WELL_COLOR,
                markeredgecolor='none', markersize=9,
-               label=f'Groundwater Wells (n={len(well_in_basin)})'),
+               label='Groundwater Wells'),
     # blank spacer
     mpatches.Patch(facecolor='none', edgecolor='none', label=''),
-    mpatches.Patch(facecolor='none', edgecolor='none',
-                   label=f'Terminal Gages ({len(terminal_gage_info)}):'),
+    mpatches.Patch(facecolor='none', edgecolor='none', label='Terminal Gages:'),
 ]
 for entry in terminal_gage_info:
     name_trunc = entry['name'][:38] + '...' if len(entry['name']) > 38 else entry['name']
@@ -172,10 +171,10 @@ for entry in terminal_gage_info:
                    label=f"{entry['id']} - {name_trunc}")
     )
 
-legend = ax.legend(handles=legend_elements, loc='lower right', fontsize=6.5,
-                   title='Map Elements & Terminal Gages', title_fontsize=7.5,
-                   frameon=True, framealpha=0.9,
-                   facecolor='white', edgecolor='#aaaaaa', labelcolor='#1E293B',
+legend = ax.legend(handles=legend_elements, loc='lower right', fontsize=11,
+                   title='Map Elements & Terminal Gages', title_fontsize=12,
+                   frameon=True, framealpha=0.95,
+                   facecolor='white', edgecolor='#475569', labelcolor='#1E293B',
                    borderpad=0.8)
 legend.get_title().set_color('#1E293B')
 legend.get_title().set_fontweight('bold')

@@ -38,6 +38,9 @@ first_month = obs['date'].min().to_period('M').to_timestamp()
 last_month  = obs['date'].max().to_period('M').to_timestamp()
 month_starts = pd.date_range(start=first_month, end=last_month, freq='MS')
 monthly_dates = month_starts + pd.offsets.Day(14)   # ~mid-month (15th)
+monthly_dates = monthly_dates[
+    (monthly_dates >= obs['date'].min()) & (monthly_dates <= obs['date'].max())
+]
 
 x_monthly = monthly_dates.map(pd.Timestamp.toordinal).values
 y_monthly  = interpolator(x_monthly)
@@ -48,12 +51,15 @@ print(f"\nGenerated {len(monthly)} monthly interpolated values")
 # ── Plot ──────────────────────────────────────────────────────────────────────
 fig, ax = plt.subplots(figsize=(8, 3.2))
 
-# Monthly interpolated line
-ax.plot(monthly['date'], monthly['wte'],
+# Dense smooth PCHIP curve (evaluated at daily resolution)
+x_dense = np.arange(x_obs[0], x_obs[-1] + 1)
+y_dense  = interpolator(x_dense)
+dense_dates = pd.to_datetime([pd.Timestamp.fromordinal(int(x)) for x in x_dense])
+ax.plot(dense_dates, y_dense,
         color='#1a4f9e', linewidth=1.6, zorder=2,
         label='PCHIP interpolated (monthly)')
 
-# Monthly interpolated points (small, filled)
+# Monthly resampled points (small filled dots on the curve)
 ax.scatter(monthly['date'], monthly['wte'],
            color='#1a4f9e', s=18, zorder=3, linewidths=0)
 
@@ -71,7 +77,6 @@ ax.yaxis.set_tick_params(labelsize=8.5)
 
 ax.set_xlabel('Date', fontsize=9.5, labelpad=4)
 ax.set_ylabel('Water Table Elevation (ft)', fontsize=9.5, labelpad=4)
-ax.set_title('PCHIP Interpolation (Monthly)', fontsize=10.5, fontweight='bold', pad=6)
 
 ax.legend(fontsize=8.5, framealpha=0.9, edgecolor='#cccccc',
           loc='lower right')

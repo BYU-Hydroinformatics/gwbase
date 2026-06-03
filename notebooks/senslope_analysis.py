@@ -106,9 +106,6 @@ ax1.set_xticks(x)
 ax1.set_xticklabels(labels, fontsize=9)
 ax1.set_ylabel("Sen's Slope (cfs/yr)", fontsize=11)
 ax2.set_ylabel("Sen's Slope / Mean Q (%/yr)", fontsize=11, color='#555555')
-ax1.set_title("Mann-Kendall Sen's Slope — Baseflow-Dominated Streamflow (bfd=1)\n"
-              "* = significant (p < 0.05)  |  Left: absolute (cfs/yr)  |  Right: % of mean Q",
-              fontsize=12, fontweight='bold')
 
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
@@ -167,9 +164,6 @@ ax.axhline(0, color='black', linewidth=1, linestyle='--', alpha=0.6)
 ax.set_xticks(np.arange(len(wte_gages)))
 ax.set_xticklabels(wte_labels, fontsize=9)
 ax.set_ylabel("Sen's Slope (ft/yr)", fontsize=11)
-ax.set_title("Distribution of Well WTE Sen's Slope by Gage\n"
-             "(negative = declining groundwater level)",
-             fontsize=13, fontweight='bold')
 ax.grid(axis='y', alpha=0.3)
 ax.set_axisbelow(True)
 plt.tight_layout()
@@ -209,9 +203,6 @@ ax.axhline(0, color='black', linewidth=1, linestyle='--', alpha=0.6)
 ax.set_xticks(np.arange(len(wte_gages)))
 ax.set_xticklabels(wte_labels, fontsize=9)
 ax.set_ylabel("Sen's Slope (ft/yr)", fontsize=11)
-ax.set_title("Well WTE Sen's Slope — Significant Only (p < 0.05)\n"
-             "↓ = declining  ↑ = rising  |  med = median slope",
-             fontsize=13, fontweight='bold')
 ax.grid(axis='y', alpha=0.3)
 ax.set_axisbelow(True)
 plt.tight_layout()

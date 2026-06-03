@@ -143,8 +143,6 @@ axes[1].set_xticks(x_pos)
 axes[1].set_xticklabels(tick_labels, fontsize=9)
 axes[0].set_ylabel('R²', fontsize=11)
 axes[1].set_ylabel('Mutual Information', fontsize=11)
-axes[0].set_title('ΔQ vs ΔWTE  —  R² by Gage and Lag Period', fontsize=13, fontweight='bold')
-axes[1].set_title('ΔQ vs ΔWTE  —  Mutual Information by Gage and Lag Period', fontsize=13, fontweight='bold')
 for ax in axes:
     ax.legend(fontsize=9)
     ax.grid(axis='y', alpha=0.35)
@@ -183,13 +181,11 @@ for ax, gage_id in zip(axes, gages):
 
     ax.set_xticks(range(len(LAG_ORDER)))
     ax.set_xticklabels(['No\nLag', '3mo', '6mo', '1yr', '5yr'], fontsize=8)
-    ax.set_title(gage_name, fontsize=9, fontweight='bold')
     ax.set_xlabel('Lag', fontsize=8)
     ax.grid(axis='y', alpha=0.35)
     ax.set_axisbelow(True)
 
 axes[0].set_ylabel('R² (per well-gage pair)', fontsize=10)
-fig.suptitle('Distribution of R² across Well-Gage Pairs by Lag Period', fontsize=13, fontweight='bold', y=1.02)
 plt.tight_layout()
 fig.savefig(OUT_DIR / 'lag_r2_violin_by_gage.png', dpi=600, bbox_inches='tight')
 plt.close()
@@ -225,7 +221,6 @@ for ax, lag in zip(axes, lag_comparisons):
     ax.axvline(0, color='black', linewidth=0.8)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8)
-    ax.set_title(f'{lag} vs No Lag\n(positive = lag better)', fontsize=10, fontweight='bold')
     ax.set_xlabel('Δ (lag − no lag)', fontsize=9)
     ax.legend(fontsize=8)
     ax.grid(axis='x', alpha=0.35)
@@ -238,7 +233,6 @@ x_max = max(lim[1] for lim in all_xlims)
 for ax in axes:
     ax.set_xlim(x_min, x_max)
 
-fig.suptitle('Change in R² and MI with Lag (Gage Level)', fontsize=13, fontweight='bold')
 plt.tight_layout()
 fig.savefig(OUT_DIR / 'lag_delta_r2_mi.png', dpi=600, bbox_inches='tight')
 plt.close()
@@ -279,11 +273,8 @@ for metric, ax in zip(['r2', 'mi'], axes):
             v = pivot.values[i, j]
             ax.text(j, i, f'{v:.0f}%', ha='center', va='center', fontsize=9,
                     color='black' if 30 < v < 70 else 'white')
-    ax.set_title(f'% of pairs where lag > no-lag\n(metric: {metric.upper()})',
-                 fontsize=11, fontweight='bold')
     plt.colorbar(im, ax=ax, label='% better')
 
-fig.suptitle('Lag Effectiveness by Gage and Metric', fontsize=13, fontweight='bold')
 plt.tight_layout()
 fig.savefig(OUT_DIR / 'lag_pct_better_heatmap.png', dpi=600, bbox_inches='tight')
 plt.close()
@@ -351,14 +342,12 @@ for lag_label, (df_sc, x_col) in all_sc.items():
         xlabel = 'ΔWTE (ft)' if lag_label == 'No Lag' else f'ΔWTE lag {lag_label} (ft)'
         ax.set_xlabel(xlabel, fontsize=9)
         ax.set_ylabel('ΔQ (cfs)', fontsize=9)
-        ax.set_title(f'{gage_name_short}\n(n={len(sub):,})', fontsize=9)
         ax.set_xlim(gage_xlim.get(gage_id))
         ax.set_ylim(gage_ylim.get(gage_id))
         ax.axhline(0, color='black', linewidth=0.4, alpha=0.5)
         ax.axvline(0, color='black', linewidth=0.4, alpha=0.5)
         ax.grid(alpha=0.25)
 
-    fig.suptitle(f'ΔWTE vs ΔQ Scatter — {lag_label}', fontsize=12, fontweight='bold')
     plt.tight_layout()
     safe = lag_label.lower().replace(' ', '_')
     fig.savefig(scatter_dir / f'scatter_{safe}.png', dpi=600, bbox_inches='tight')

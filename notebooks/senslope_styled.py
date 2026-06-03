@@ -73,8 +73,6 @@ ax.axvline(0, color='black', linewidth=0.8)
 ax.set_yticks(range(len(sf_plot)))
 ax.set_yticklabels(sf_plot['label'], fontsize=9)
 ax.set_xlabel("Sen's slope (cfs/yr)", fontsize=11)
-ax.set_title("Streamflow Trend — Sen's Slope per Gage\n"
-             "(* p<0.05, red=declining, blue=increasing)", fontsize=12, fontweight='bold')
 ax.grid(axis='x', alpha=0.3)
 ax.set_axisbelow(True)
 
@@ -121,8 +119,6 @@ for ax, gage_id in zip(axes, gages_with_wte):
     ax.set_xticks([0])
     ax.set_xticklabels([f'ya≥{MIN_YEARS}'], fontsize=9)
     ax.set_ylabel("WTE Sen's slope (ft/yr)", fontsize=9)
-    ax.set_title(GAGE_SHORT.get(gage_id, gage_id).replace('\n', ' '),
-                 fontsize=10, fontweight='bold')
     ax.grid(axis='y', alpha=0.3)
     ax.set_axisbelow(True)
 
@@ -153,13 +149,6 @@ for ax, gage_id in zip(axes, gages_with_wte):
 for ax in axes[n_gages:]:
     ax.set_visible(False)
 
-fig.suptitle(
-    f"Per-well WTE Sen's Slope — Full Record\n"
-    f"Filter: ya≥{MIN_YEARS}  |  "
-    f"box = IQR, whiskers = 5–95th pct, outliers hidden; "
-    f"red dashed = 0",
-    fontsize=12, fontweight='bold', y=1.01
-)
 plt.tight_layout()
 fig.savefig(OUT_DIR / 'fig2_wte_senslope_boxplot.png', dpi=600, bbox_inches='tight')
 plt.close()

@@ -43,8 +43,6 @@ mi_df = mi_df[mi_df["mi"].notna()]
 gage_names = {}
 for _, row in r2_df[["gage_id","gage_name"]].dropna().drop_duplicates("gage_id").iterrows():
     gage_names[row["gage_id"]] = row["gage_name"]
-for _, row in mi_df[["gage_id","gage_name"]].dropna().drop_duplicates("gage_id").iterrows():
-    gage_names.setdefault(row["gage_id"], row["gage_name"])
 
 TOP_N = 10
 CMAP  = cm.get_cmap("tab10")
@@ -116,19 +114,12 @@ def plot_per_well_subplots(gage_id, top_well_ids, metric_label, out_dir,
         ax.set_ylabel("ΔQ (cfs)", fontsize=8)
         mv_str = f"  {metric_label}={metric_vals[str(wid)]:.3f}" if metric_vals and str(wid) in metric_vals else ""
         rank = unique_wells.index(wid) + 1
-        ax.set_title(f"#{rank}  {str(wid)}{mv_str}",
-                     fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
 
     # Hide unused axes
     for j in range(n_wells, len(axes_flat)):
         axes_flat[j].set_visible(False)
 
-    fig.suptitle(
-        f"Gage {gage_id}  —  {gage_name}\n"
-        f"ΔQ vs ΔWTE per well  (top {n_wells} by {metric_label})",
-        fontsize=11, fontweight="bold"
-    )
     plt.tight_layout()
     out_path = out_dir / f"{gage_id}.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
@@ -206,11 +197,6 @@ def plot_combined_with_per_well_fits(gage_id, top_well_ids, metric_label, out_di
 
     ax.set_xlabel("ΔWTE (ft)", fontsize=11)
     ax.set_ylabel("ΔQ (cfs)", fontsize=11)
-    ax.set_title(
-        f"Gage {gage_id}  —  {gage_name}\n"
-        f"ΔQ vs ΔWTE  (top {n_wells} by {metric_label}, per-well fit lines)",
-        fontsize=11, fontweight="bold"
-    )
     ax.grid(True, alpha=0.25)
 
     plt.tight_layout()
@@ -271,7 +257,7 @@ for gage_id, grp in mi_df.groupby("gage_id"):
     mi_tables.append(ranked)
 
 mi_top10 = pd.concat(mi_tables).reset_index(drop=True)
-mi_top10 = mi_top10[["rank", "gage_id", "gage_name", "well_id",
+mi_top10 = mi_top10[["rank", "gage_id", "well_id",
                       "n_records", "mi",
                       "pearson_r", "pearson_p", "spearman_r", "spearman_p"]]
 r2_extra = r2_df[["well_id", "gage_id", "n_observations",

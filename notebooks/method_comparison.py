@@ -160,7 +160,6 @@ def grouped_bar(metric, ylabel, title, outname, ylim=None, hline=None):
     ax.set_xticks(x)
     ax.set_xticklabels(GAGE_ORDER, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
-    ax.set_title(title, fontsize=13, fontweight="bold")
     if ylim: ax.set_ylim(ylim)
     ax.legend(fontsize=7.5, ncol=4, loc="upper right",
               framealpha=0.9, bbox_to_anchor=(1, 1))
@@ -202,8 +201,6 @@ metrics = [
 ]
 
 fig = plt.figure(figsize=(20, 8))
-fig.suptitle("Method comparison heatmap across all gages\n(pooled scatter regression per method × gage)",
-             fontsize=13, fontweight="bold", y=1.01)
 
 gs = gridspec.GridSpec(1, 3, wspace=0.35)
 
@@ -224,7 +221,6 @@ for col, (metric, mtitle, cmap, vmin, vmax) in enumerate(metrics):
     ax.set_xticklabels([g.split()[0] for g in GAGE_ORDER], fontsize=9, rotation=30, ha="right")
     ax.set_yticks(range(len(short_labels)))
     ax.set_yticklabels(short_labels, fontsize=8)
-    ax.set_title(mtitle, fontsize=11, fontweight="bold")
 
     # Annotate each cell with its numeric value
     for i in range(len(short_labels)):
@@ -256,12 +252,9 @@ for label, df in all_dfs.items():
     fname = label.replace("\n","_").replace(" ","_").replace("/","").lower() + ".png"
     fig, axes = plt.subplots(1, len(GAGE_ORDER), figsize=(18, 3.8),
                               gridspec_kw={"wspace":0.4})
-    fig.suptitle(f"Slope distribution — {label.replace(chr(10),' ')}",
-                 fontsize=11, fontweight="bold")
     for ax, gshort in zip(axes, GAGE_ORDER):
         grp = df[df["gage_short"]==gshort]["slope"].dropna()
         if len(grp) < 3:
-            ax.set_title(f"{gshort}\n(n<3)", fontsize=8)
             ax.set_visible(True)
             continue
         p2, p98 = np.percentile(grp, 2), np.percentile(grp, 98)
@@ -275,8 +268,6 @@ for label, df in all_dfs.items():
         ax.axvline(0, color="black", linewidth=1.2, linestyle="--")
         n_neg = (grp < 0).sum()
         n_pos = (grp > 0).sum()
-        ax.set_title(f"{gshort}\nn={len(grp)}  neg={n_neg}({100*n_neg/len(grp):.0f}%)",
-                     fontsize=8, fontweight="bold")
         ax.grid(axis="y", alpha=0.25)
         ax.tick_params(labelsize=7)
         ax.set_xlabel("Slope", fontsize=8)
@@ -291,8 +282,6 @@ print("Generating per-gage method comparison figure...")
 
 fig, axes = plt.subplots(1, len(GAGE_ORDER), figsize=(22, 6),
                           gridspec_kw={"wspace":0.45})
-fig.suptitle("Pooled regression: slope / R² / significance by method and gage",
-             fontsize=11, fontweight="bold")
 
 for ax, gshort in zip(axes, GAGE_ORDER):
     sub = summary[summary["gage"]==gshort].copy()
@@ -324,7 +313,6 @@ for ax, gshort in zip(axes, GAGE_ORDER):
 
     ax.set_yticks(y)
     ax.set_yticklabels(sub["method"], fontsize=6.5)
-    ax.set_title(gshort, fontsize=9, fontweight="bold")
     ax.set_xlabel("Pooled slope", fontsize=8)
     ax.grid(axis="x", alpha=0.2)
     ax.tick_params(axis="x", labelsize=7)

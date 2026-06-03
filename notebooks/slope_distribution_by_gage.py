@@ -48,11 +48,6 @@ gage_short = {
 # ── Figure: 5 rows (one per gage) × 2 cols ───────────────────────────────────
 fig, axes = plt.subplots(5, 2, figsize=(14, 18),
                          gridspec_kw={"width_ratios": [2.2, 1]})
-fig.suptitle(
-    "Slope Distribution — All Wells per Gage\n"
-    "Red ticks = top-10 by R²   |   Blue ticks = top-10 by MI",
-    fontsize=13, fontweight="bold", y=0.995
-)
 
 for row, gage_name in enumerate(gage_order):
     ax_hist = axes[row, 0]
@@ -118,12 +113,6 @@ for row, gage_name in enumerate(gage_order):
     ax_hist.set_ylabel("Count", fontsize=9)
     if row == 4:
         ax_hist.set_xlabel("Slope  (ΔQ / ΔWTE,  cfs / ft)", fontsize=9)
-    ax_hist.set_title(
-        f"{gage_short[gage_name]}   "
-        f"Neg: {n_neg}/{n_all} ({100*n_neg/n_all:.0f}%)   "
-        f"Pos: {n_pos}/{n_all} ({100*n_pos/n_all:.0f}%)",
-        fontsize=9, fontweight="bold", loc="left"
-    )
     ax_hist.grid(axis="y", alpha=0.25)
 
     # Tick legend (first row only)

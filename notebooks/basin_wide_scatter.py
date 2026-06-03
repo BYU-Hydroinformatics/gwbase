@@ -101,11 +101,6 @@ def _pooled_scatter(df, y_col, y_label, title_suffix, filename):
     ax.axvline(0, color="#BBBBBB", linewidth=0.7, linestyle=":", zorder=2)
     ax.set_xlabel("ΔWTE (ft)  [+ = rising,  − = declining]", fontsize=12)
     ax.set_ylabel(y_label, fontsize=12)
-    ax.set_title(
-        f"Basin-wide {y_col.replace('_',' ')} vs ΔWTE — GSLB  {title_suffix}\n"
-        f"(dashed = per-gage fit,  solid black = pooled fit)",
-        fontsize=11, fontweight="bold"
-    )
     ax.legend(fontsize=8.5, loc="lower right", framealpha=0.88, markerscale=2.5)
     ax.grid(True, alpha=0.2)
     plt.tight_layout()
@@ -152,13 +147,8 @@ def _facet(df, y_col, y_label, title_suffix, filename):
         ax.axvline(0, color="#CCCCCC", linewidth=0.6, linestyle=":", zorder=2)
         ax.set_xlabel("ΔWTE (ft)", fontsize=9)
         ax.set_ylabel(y_label, fontsize=9)
-        ax.set_title(f"{gage_id}\n{name}", fontsize=8, fontweight="bold")
         ax.grid(True, alpha=0.2)
 
-    fig.suptitle(
-        f"ΔQ vs ΔWTE by gage — GSLB  {title_suffix}",
-        fontsize=12, fontweight="bold", y=1.01
-    )
     plt.tight_layout()
     out = OUT_DIR / filename
     plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")

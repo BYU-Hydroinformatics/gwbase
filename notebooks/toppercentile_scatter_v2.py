@@ -139,19 +139,11 @@ def plot_per_well_subplots(gage_id, top_well_ids, pct_label, n_total,
         mv_str = f"  {sort_metric_label}={metric_vals[str(wid)]:.3f}" \
                  if metric_vals and str(wid) in metric_vals else ""
         rank = unique_wells.index(wid) + 1
-        ax.set_title(f"#{rank}  {str(wid)}{mv_str}",
-                     fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
 
     for j in range(n_wells, len(axes_flat)):
         axes_flat[j].set_visible(False)
 
-    fig.suptitle(
-        f"Gage {gage_id}  —  {gage_name}\n"
-        f"ΔQ vs ΔWTE per well  "
-        f"(top {pct_label} by {sort_metric_label},  {n_wells}/{n_total} wells)",
-        fontsize=11, fontweight="bold"
-    )
     plt.tight_layout()
     out_path = out_dir / f"{gage_id}.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
@@ -221,11 +213,6 @@ def plot_combined_with_per_well_fits(gage_id, top_well_ids, pct_label, n_total,
 
     ax.set_xlabel("ΔWTE (ft)", fontsize=11)
     ax.set_ylabel("ΔQ (cfs)", fontsize=11)
-    ax.set_title(
-        f"Gage {gage_id}  —  {gage_name}\n"
-        f"ΔQ vs ΔWTE  (top {pct_label} by {sort_metric_label}, per-well fit lines)",
-        fontsize=11, fontweight="bold"
-    )
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out_path = out_dir / f"{gage_id}.png"

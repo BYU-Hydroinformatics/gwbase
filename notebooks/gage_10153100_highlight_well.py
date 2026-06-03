@@ -210,7 +210,6 @@ ax_ins.scatter(
 
 ax_ins.set_aspect("equal")
 ax_ins.set_axis_off()
-ax_ins.set_title("Location within GSLB", fontsize=9, fontweight="bold", pad=4)
 for spine in ax_ins.spines.values():
     spine.set_visible(True)
     spine.set_edgecolor("#888888")
@@ -251,10 +250,6 @@ leg = ax_leg.legend(
 ax_leg.add_artist(leg)
 
 # ── Title ──────────────────────────────────────────────────────────────────────
-fig.suptitle(
-    f"Terminal Gage {GAGE_ID}  —  {gage_name}",
-    fontsize=13, fontweight="bold", y=0.975,
-)
 
 out_path = OUT / f"{GAGE_ID}_highlight_well_{HIGHLIGHT_WELL_ID}.png"
 plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")

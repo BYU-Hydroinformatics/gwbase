@@ -104,11 +104,6 @@ print(pivot.round(1).to_string())
 
 # ── Fig 1: slope distribution per lag (3 gages × 5 lags) ────────────────────
 fig, axes = plt.subplots(3, 5, figsize=(18, 10), sharey=False)
-fig.suptitle(
-    "Slope Distribution per Lag — Bear River, Weber River, Provo River\n"
-    "Red = negative slope,  Blue = positive slope",
-    fontsize=13, fontweight="bold"
-)
 
 gage_list = ["Bear River", "Weber River", "Provo River"]
 for row, gage_short in enumerate(gage_list):
@@ -137,12 +132,6 @@ for row, gage_short in enumerate(gage_list):
             patch.set_alpha(0.7)
 
         ax.axvline(0, color="black", linewidth=1.2, linestyle="--", zorder=5)
-        ax.set_title(
-            f"{lag_name}\n"
-            f"neg {n_neg} ({100*n_neg/n_tot:.0f}%)  "
-            f"pos {n_pos} ({100*n_pos/n_tot:.0f}%)",
-            fontsize=8
-        )
         ax.set_xlabel("slope" if row==2 else "", fontsize=8)
         if col == 0:
             ax.set_ylabel(f"{gage_short}\nCount", fontsize=8)
@@ -161,11 +150,6 @@ print(f"\nSaved → {p1}")
 
 fig2, axes2 = plt.subplots(1, 3, figsize=(18, 10),
                             gridspec_kw={"wspace": 0.45})
-fig2.suptitle(
-    "Per-well slope across lags\n"
-    "Wells sorted by No-Lag slope  |  Red < 0 < Blue",
-    fontsize=12, fontweight="bold"
-)
 
 for col, gage_short in enumerate(gage_list):
     ax = axes2[col]
@@ -202,7 +186,6 @@ for col, gage_short in enumerate(gage_list):
     ax.set_xticklabels(LAG_ORDER, fontsize=8, rotation=30, ha="right")
     ax.set_yticks(range(len(piv)))
     ax.set_yticklabels(piv.index, fontsize=5)
-    ax.set_title(f"{gage_short}  (n={len(piv)} wells)", fontsize=10, fontweight="bold")
 
     plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02,
                  label="slope (cfs/ft)")
@@ -245,7 +228,6 @@ for gage_short, color in colors3.items():
 ax3.axhline(50, color="grey", linewidth=1, linestyle="--", alpha=0.6, label="50% threshold")
 ax3.set_ylabel("% wells with negative slope", fontsize=11)
 ax3.set_xlabel("Lag", fontsize=11)
-ax3.set_title("Does adding lag reduce negative-slope prevalence?", fontsize=12, fontweight="bold")
 ax3.legend(fontsize=10)
 ax3.set_ylim(0, 100)
 ax3.grid(alpha=0.3)

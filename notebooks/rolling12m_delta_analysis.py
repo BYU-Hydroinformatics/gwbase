@@ -157,8 +157,6 @@ for gname in GAGE_SHORT:
     ax.axvline(0,color="#CCCCCC",linewidth=0.7,linestyle=":")
     ax.set_xlabel("Δ(12m rolling WTE) ft/yr", fontsize=11)
     ax.set_ylabel("Δ(12m rolling Q) cfs/yr", fontsize=11)
-    ax.set_title(f"{gname}\nΔQ vs ΔWTE — 12-month rolling mean, annual diff (all wells)",
-                 fontsize=10, fontweight="bold")
     ax.legend(fontsize=9, loc="upper left", framealpha=0.85,
               title="Quarter of current month")
     ax.grid(True, alpha=0.2)
@@ -213,13 +211,9 @@ for gname, grp in reg_df.groupby("gage_name"):
         ax.set_xlabel("ΔWTE roll12 (ft)", fontsize=8)
         ax.set_ylabel("ΔQ roll12 (cfs)", fontsize=8)
         mv = mvals.get(str(wid))
-        ax.set_title(f"#{i+1}  {wid}"+(f"  R²={mv:.3f}" if mv else ""),
-                     fontsize=7.5, fontweight="bold")
         ax.grid(True, alpha=0.2)
     for j in range(n, len(axes_flat)):
         axes_flat[j].set_visible(False)
-    fig.suptitle(f"{gname}\nΔQ vs ΔWTE per well (top {n} by R², 12m rolling Δ)",
-                 fontsize=10, fontweight="bold")
     plt.tight_layout()
     out = T10_DIR / f"{gname.split()[0].lower()}.png"
     plt.savefig(out, dpi=600, bbox_inches="tight", facecolor="white")
@@ -267,8 +261,6 @@ for gname, grp in reg_df.groupby("gage_name"):
               title=f"Top {len(wells)} wells by R²",title_fontsize=7.5)
     ax.set_xlabel("Δ(12m rolling WTE) ft/yr", fontsize=11)
     ax.set_ylabel("Δ(12m rolling Q) cfs/yr", fontsize=11)
-    ax.set_title(f"{gname}\n12m rolling Δ (top {len(wells)}, per-well fit)",
-                 fontsize=10, fontweight="bold")
     ax.grid(True, alpha=0.25)
     plt.tight_layout()
     out = T10F_DIR / f"{gname.split()[0].lower()}.png"

@@ -126,11 +126,6 @@ def plot_simple_sum():
     ax.axvline(0, color="#BBBBBB", linewidth=0.7, linestyle=":", zorder=2)
     ax.set_xlabel("ΔWTE (ft)  [+ = rising,  − = declining]", fontsize=12)
     ax.set_ylabel("ΔQ (cfs)", fontsize=12)
-    ax.set_title(
-        "Simple-Sum Basin Slope  |  GSLB Terminal Gages\n"
-        r"(dashed = per-gage fit,  solid black = $\Sigma$ slopes through origin)",
-        fontsize=11, fontweight="bold",
-    )
     ax.legend(fontsize=8.5, loc="upper left", framealpha=0.88, markerscale=2.2)
     ax.grid(True, alpha=0.2)
 
@@ -194,11 +189,6 @@ def plot_normalized():
     ax.axvline(0, color="#BBBBBB", linewidth=0.7, linestyle=":", zorder=2)
     ax.set_xlabel("ΔWTE (ft)  [+ = rising,  − = declining]", fontsize=12)
     ax.set_ylabel("ΔQ / Q₀  (fractional change in streamflow)", fontsize=12)
-    ax.set_title(
-        "Normalized Basin-Scale Relationship  |  GSLB Terminal Gages\n"
-        "(dashed = per-gage fit,  solid black = pooled regression on ΔQ/Q₀)",
-        fontsize=11, fontweight="bold",
-    )
     ax.legend(fontsize=8.5, loc="upper left", framealpha=0.88, markerscale=2.2)
     ax.grid(True, alpha=0.2)
 

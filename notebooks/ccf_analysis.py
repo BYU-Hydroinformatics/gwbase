@@ -182,8 +182,6 @@ for i, (ax, (gage_id, color)) in enumerate(zip(axes, zip(gages, COLORS))):
                 xytext=(peak_lag + 3, peak_val + (0.02 if peak_val >= 0 else -0.04)),
                 fontsize=8, color='red')
 
-    ax.set_title(f"{GAGE_NAME.get(gage_id, gage_id)}\n(n={n_curves} wells)",
-                 fontsize=10, fontweight='bold')
     ax.set_xlabel('Lag (months)', fontsize=9)
     ax.set_ylabel('CCF(ΔQ, ΔWTE)', fontsize=9)
     ax.set_xlim(0, MAX_LAG)
@@ -194,10 +192,6 @@ for i, (ax, (gage_id, color)) in enumerate(zip(axes, zip(gages, COLORS))):
 for ax in axes[n_gages:]:
     ax.set_visible(False)
 
-fig.suptitle('Cross-Correlation Function: ΔQ vs ΔWTE\n'
-             '(positive lag → ΔWTE leads ΔQ)\n'
-             'Shaded band = ±1 SE across wells  |  Dashed = 95% CI',
-             fontsize=13, fontweight='bold')
 plt.tight_layout()
 fig.savefig(OUT_FIG / 'ccf_curves_by_gage.png', dpi=600, bbox_inches='tight')
 plt.close()
@@ -229,9 +223,6 @@ for i, (gage_id, color) in enumerate(zip(gages, COLORS)):
 ax.set_xticks(positions)
 ax.set_xticklabels([GAGE_NAME.get(g, g) for g in gages], fontsize=9)
 ax.set_ylabel('Peak Lag (months)', fontsize=11)
-ax.set_title('Distribution of Optimal CCF Lag by Gage\n'
-             '(lag at which |CCF| is maximised per well-gage pair)',
-             fontsize=13, fontweight='bold')
 ax.set_ylim(-2, MAX_LAG + 5)
 ax.axhline(12, color='steelblue', linestyle=':', linewidth=1, alpha=0.7, label='12 mo')
 ax.axhline(24, color='darkorange', linestyle=':', linewidth=1, alpha=0.7, label='24 mo')
@@ -267,9 +258,6 @@ ax.set_xticklabels(heatmap_lags, fontsize=8)
 ax.set_yticks(range(n_gages))
 ax.set_yticklabels([GAGE_FULL.get(g, g) for g in gages], fontsize=9)
 ax.set_xlabel('Lag (months)', fontsize=11)
-ax.set_title('Mean CCF(ΔQ, ΔWTE) by Gage and Lag\n'
-             '(red = positive correlation, blue = negative)',
-             fontsize=13, fontweight='bold')
 
 # annotate cells
 for i in range(n_gages):
@@ -297,8 +285,6 @@ sc = axes[0].scatter(
 plt.colorbar(sc, ax=axes[0], label='Peak lag (months)')
 axes[0].set_xlabel('Number of observations (months)', fontsize=11)
 axes[0].set_ylabel('|Peak CCF|', fontsize=11)
-axes[0].set_title('Peak CCF Magnitude vs Record Length\n(colour = optimal lag)',
-                  fontsize=11, fontweight='bold')
 axes[0].axhline(0, color='black', linewidth=0.5)
 axes[0].grid(alpha=0.3)
 for gid, color in zip(gages, COLORS):
@@ -328,8 +314,6 @@ axes[1].set_xticks(x_pos)
 axes[1].set_xticklabels([f'Lag {l} mo' for l in key_lags], fontsize=10)
 axes[1].axhline(0, color='black', linewidth=0.7)
 axes[1].set_ylabel('Mean CCF (across pairs)', fontsize=11)
-axes[1].set_title('Mean CCF at Key Lags by Gage\n(error bars = ±1 SE)',
-                  fontsize=11, fontweight='bold')
 axes[1].legend(fontsize=7, loc='upper right')
 axes[1].grid(axis='y', alpha=0.3)
 axes[1].set_axisbelow(True)
