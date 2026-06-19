@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+title: "GWBASE: Groundwater-Surface Water Interaction Analysis Library"
+message: "If you use this software, please cite it using these metadata."
+type: software
+authors:
+  - name: "BYU Hydroinformatics"
+abstract: >-
+  A comprehensive Python library for analyzing groundwater-surface
+  water interactions using time series correlation, spatial analysis,
+  and statistical methods.
+keywords:
+  - groundwater
+  - hydrology
+  - water-resources
+  - geospatial
+repository-code: "https://github.com/BYU-Hydroinformatics/gwbase"
+url: "https://github.com/BYU-Hydroinformatics/gwbase"
+license: MIT
+version: 0.1.0

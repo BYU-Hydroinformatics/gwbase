@@ -1,0 +1,25 @@
+{
+  "title": "GWBASE: Groundwater-Surface Water Interaction Analysis Library",
+  "description": "A comprehensive Python library for analyzing groundwater-surface water interactions using time series correlation, spatial analysis, and statistical methods.",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "BYU Hydroinformatics"
+    }
+  ],
+  "keywords": [
+    "groundwater",
+    "hydrology",
+    "water-resources",
+    "geospatial"
+  ],
+  "related_identifiers": [
+    {
+      "scheme": "url",
+      "identifier": "https://github.com/BYU-Hydroinformatics/gwbase",
+      "relation": "isSupplementTo"
+    }
+  ]
+}
