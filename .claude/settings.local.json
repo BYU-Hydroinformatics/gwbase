@@ -21,7 +21,8 @@
       "Bash(GWBASE_OUTPUT_DIR=report/filter_buf60 GWBASE_STEPS=6-9 GWBASE_BUFFER_M=60 python main_gwbase.py)",
       "Bash(GWBASE_OUTPUT_DIR=report/filter_buf60 GWBASE_STEPS=9 GWBASE_BUFFER_M=60 python main_gwbase.py)",
       "Bash(GWBASE_OUTPUT_DIR=report/filter_none GWBASE_STEPS=4-9 GWBASE_MIN_WTE=1 GWBASE_MIN_YEARS=0 python main_gwbase.py)",
-      "Bash(GWBASE_OUTPUT_DIR=report/filter_none GWBASE_STEPS=9 GWBASE_MIN_WTE=1 GWBASE_MIN_YEARS=0 python main_gwbase.py)"
+      "Bash(GWBASE_OUTPUT_DIR=report/filter_none GWBASE_STEPS=9 GWBASE_MIN_WTE=1 GWBASE_MIN_YEARS=0 python main_gwbase.py)",
+      "Bash(git push *)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false

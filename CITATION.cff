@@ -2,6 +2,7 @@ cff-version: 1.2.0
 title: "GWBASE: Groundwater-Surface Water Interaction Analysis Library"
 message: "If you use this software, please cite it using these metadata."
 type: software
+doi: 10.5281/zenodo.20765755
 authors:
   - name: "BYU Hydroinformatics"
 abstract: >-
