@@ -761,21 +761,11 @@ def plot_delta_scatter(
                     fontsize=10, ha='right', va='top',
                     bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-        gage_name = gage_name_map.get(str(gage_id), '') if gage_name_map else ''
-        title = f'Gage {gage_id}'
-        if gage_name:
-            title += f'\n{gage_name}'
-        if class_col and class_col in group.columns:
-            class_val = group[class_col].iloc[0]
-            title += f' - {class_val}'
-        title += '\nΔQ vs ΔWTE'
-
-        plt.title(title, fontsize=14)
         plt.xlabel('ΔWTE (ft)')
         plt.ylabel('ΔQ (cfs)')
         plt.grid(True, alpha=0.3)
 
-        plt.savefig(os.path.join(output_dir, f'gage_{gage_id}.png'),
+        plt.savefig(os.path.join(output_dir, f'gage_{gage_id}_general_scatter.png'),
                    bbox_inches='tight', dpi=600)
         plt.close()
 
@@ -1238,7 +1228,6 @@ def plot_mi_results(
         plt.xticks(rotation=45, ha='right')
         plt.xlabel(xlabel)
         plt.ylabel('Mutual Information')
-        plt.title('MI Distribution by Gage')
         plt.grid(True, alpha=0.3, axis='y')
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'mi_by_gage.png'), dpi=600)
@@ -1262,7 +1251,6 @@ def plot_mi_results(
                     bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
         ax.set_xlabel('|Pearson r|')
         ax.set_ylabel('Mutual Information')
-        ax.set_title('MI vs |Pearson Correlation|')
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
@@ -1460,9 +1448,8 @@ def plot_seasonal_monthly_scatter(
         for idx, season in enumerate(season_order):
             group = gage_df[gage_df['season'] == season]
             _plot_subplot(axes[idx], group, season)
-        fig.suptitle(f'Gage {gage_id} - ΔQ vs ΔWTE by Season', fontsize=14)
         plt.tight_layout()
-        plt.savefig(os.path.join(scatter_season_dir, f'gage_{gage_id}.png'), dpi=600, bbox_inches='tight')
+        plt.savefig(os.path.join(scatter_season_dir, f'gage_{gage_id}_seasonal_scatter.png'), dpi=600, bbox_inches='tight')
         plt.close()
 
     # Monthly: one figure per gage, 4x3 subplots

@@ -121,7 +121,8 @@ def plot_per_well_subplots(gage_id, top_well_ids, metric_label, out_dir,
         axes_flat[j].set_visible(False)
 
     plt.tight_layout()
-    out_path = out_dir / f"{gage_id}.png"
+    metric_slug = "r2" if metric_label == "R²" else "mi"
+    out_path = out_dir / f"{gage_id}_top10_{metric_slug}_per_well.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  [per_well]     Saved → {out_path}")
@@ -200,7 +201,8 @@ def plot_combined_with_per_well_fits(gage_id, top_well_ids, metric_label, out_di
     ax.grid(True, alpha=0.25)
 
     plt.tight_layout()
-    out_path = out_dir / f"{gage_id}.png"
+    metric_slug = "r2" if metric_label == "R²" else "mi"
+    out_path = out_dir / f"{gage_id}_top10_{metric_slug}_combined.png"
     plt.savefig(out_path, dpi=600, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  [per_well_fit] Saved → {out_path}")

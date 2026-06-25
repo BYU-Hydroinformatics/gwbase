@@ -221,6 +221,7 @@ for ax, lag in zip(axes, lag_comparisons):
     ax.axvline(0, color='black', linewidth=0.8)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8)
+    ax.set_title(lag, fontsize=11)
     ax.set_xlabel('Δ (lag − no lag)', fontsize=9)
     ax.legend(fontsize=8)
     ax.grid(axis='x', alpha=0.35)
