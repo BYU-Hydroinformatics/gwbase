@@ -43,6 +43,7 @@ def load_config(config_path: str = 'config.yaml') -> dict:
             'manual_add_gages':    [10163000, 10153100, 10152000],
         },
         'filtering': {'elevation_buffer_m': 30.0},
+        'streamflow': {'min_bfd_days': 1},
         'well_quality': {'min_measurements': 20, 'min_years': 3},
         'analysis': {'exclude_gages': ['10167000', '10171000']},
     }
@@ -380,7 +381,8 @@ def run_step_7_pairing(
     well_data: pd.DataFrame,
     streamflow_data: pd.DataFrame,
     bfd_classification: pd.DataFrame = None,
-    output_dir: str = None
+    output_dir: str = None,
+    min_bfd_days: int = 1
 ):
     """
     Step 7: Pair Groundwater and Streamflow Records
@@ -396,7 +398,9 @@ def run_step_7_pairing(
 
     # Aggregate streamflow to monthly intervals (average of bfd=1 flows)
     print("\nAggregating streamflow to monthly intervals (bfd=1 average)...")
-    streamflow_monthly = gwbase.aggregate_streamflow_monthly_bfd(streamflow_data)
+    streamflow_monthly = gwbase.aggregate_streamflow_monthly_bfd(
+        streamflow_data, min_bfd_days=min_bfd_days
+    )
     
     # Save aggregated streamflow
     if output_dir:
@@ -645,6 +649,7 @@ def main():
     exclude_gages = [str(g) for g in cfg['analysis']['exclude_gages']]
     manual_remove = [int(g) for g in cfg['network']['manual_remove_gages']]
     manual_add    = [int(g) for g in cfg['network']['manual_add_gages']]
+    min_bfd_days  = cfg['streamflow']['min_bfd_days']
 
     # Environment variable overrides (take precedence over config.yaml)
     env_output_dir = os.environ.get("GWBASE_OUTPUT_DIR")
@@ -915,7 +920,10 @@ def main():
 
     # Step 7: Pairing
     if start_step <= 7 <= end_step:
-        paired = run_step_7_pairing(filtered_data, streamflow, None, dirs['processed'])
+        paired = run_step_7_pairing(
+            filtered_data, streamflow, None, dirs['processed'],
+            min_bfd_days=min_bfd_days
+        )
         # Re-save with gage_name added
         _add_gage_name(paired, gage_name_map).to_csv(
             os.path.join(dirs['processed'], 'paired_well_streamflow.csv'), index=False

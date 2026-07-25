@@ -297,7 +297,7 @@ def aggregate_streamflow_monthly_bfd(
     
     if len(bfd_data) == 0:
         print("Warning: No bfd=1 records found in streamflow data")
-        return pd.DataFrame(columns=[gage_id_col, date_col, q_col, bfd_col])
+        return pd.DataFrame(columns=[gage_id_col, date_col, q_col, 'n_bfd_days', bfd_col])
     
     # Create year-month grouping
     bfd_data['year'] = bfd_data[date_col].dt.year
@@ -306,7 +306,7 @@ def aggregate_streamflow_monthly_bfd(
     # Group by gage_id, year, and month, then compute mean of q and count the
     # BFD days each mean rests on
     monthly_agg = bfd_data.groupby([gage_id_col, 'year', 'month']).agg(
-        **{q_col: (q_col, 'mean'), 'n_bfd_days': (q_col, 'size')}
+        **{q_col: (q_col, 'mean'), 'n_bfd_days': (q_col, 'count')}
     ).reset_index()
 
     # Drop months too sparsely sampled to represent baseflow conditions

@@ -99,8 +99,8 @@ def calculate_well_metrics(
     # upstream merges; scipy <1.12 coerced silently, newer scipy raises
     # "data type dtype('O') not compatible with finfo". Values are unchanged --
     # this only makes the old implicit conversion explicit.
-    delta_wte = pd.to_numeric(well_data[delta_wte_col], errors='coerce').to_numpy(dtype=float)
-    delta_q = pd.to_numeric(well_data[delta_q_col], errors='coerce').to_numpy(dtype=float)
+    delta_wte = pd.to_numeric(well_data[delta_wte_col], errors='raise').to_numpy(dtype=float)
+    delta_q = pd.to_numeric(well_data[delta_q_col], errors='raise').to_numpy(dtype=float)
 
     # Mutual Information
     mi = calculate_mutual_info(delta_wte, delta_q, n_bins=n_bins)
