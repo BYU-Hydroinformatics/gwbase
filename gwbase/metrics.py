@@ -53,6 +53,13 @@ def compute_delta_metrics(
     """
     data = paired_data.copy()
 
+    # Upstream merges can leave these as object dtype. Coerce before
+    # subtracting so the deltas are genuinely numeric -- otherwise every
+    # downstream scipy call has to defend against object arrays. Values are
+    # unchanged; this only fixes the container type.
+    for col in (wte_col, wte0_col, q_col, q0_col):
+        data[col] = pd.to_numeric(data[col], errors='coerce')
+
     # Compute delta values
     data['delta_wte'] = data[wte_col] - data[wte0_col]
     data['delta_q'] = data[q_col] - data[q0_col]
