@@ -95,6 +95,19 @@ def main():
         s, se, t, p, dof = two_way_cluster(y, X, well, ym)
         recs.append(fit_row("cluster: well+month", s, se, t, p, dof + 1))
 
+        # Well fixed effects (within estimator): absorb each well's baseline so
+        # between-well differences cannot drive the slope. Keeps every
+        # observation -- this is pooling done correctly, not a robustness trick,
+        # and it is the fairest test of whether the pooled result holds.
+        gg = g.copy()
+        gg["xd"] = gg.delta_wte - gg.groupby("well_id").delta_wte.transform("mean")
+        gg["yd"] = gg.delta_q - gg.groupby("well_id").delta_q.transform("mean")
+        fe = sm.OLS(gg.yd.to_numpy(float), gg.xd.to_numpy(float)).fit(
+            cov_type="cluster", cov_kwds={"groups": gg.well_id.values})
+        recs.append(fit_row("well fixed effects", fe.params[0], fe.bse[0],
+                            fe.tvalues[0], fe.pvalues[0], g.well_id.nunique(),
+                            "within estimator, all obs retained"))
+
         agg = g.groupby("ym").agg(delta_wte=("delta_wte", "mean"),
                                   delta_q=("delta_q", "mean")).dropna()
         if len(agg) > 2:
@@ -133,7 +146,7 @@ def main():
     print("=" * 78)
     piv = res.pivot(index="gage", columns="estimator", values="p_value")
     order = ["naive OLS", "cluster: well", "cluster: month",
-             "cluster: well+month", "catchment-month mean"]
+             "cluster: well+month", "well fixed effects", "catchment-month mean"]
     piv = piv[[c for c in order if c in piv.columns]]
     print((piv < 0.05).replace({True: "sig", False: "n.s."}).to_string())
     print("\np-values:")
