@@ -247,11 +247,17 @@ def aggregate_streamflow_monthly_bfd(
     gage_id_col: str = 'gage_id',
     date_col: str = 'date',
     q_col: str = 'q',
-    bfd_col: str = 'bfd'
+    bfd_col: str = 'bfd',
+    min_bfd_days: int = 1
 ) -> pd.DataFrame:
     """
     Aggregate streamflow data to monthly intervals, computing average flow
     for bfd=1 periods only, with dates set to middle of each month.
+
+    Months are retained only if they contain at least ``min_bfd_days``
+    baseflow-dominated days. The default of 1 reproduces the original
+    behaviour, in which a month represented by a single BFD day carried the
+    same weight as a fully baseflow-dominated month.
 
     Parameters
     ----------
@@ -265,6 +271,9 @@ def aggregate_streamflow_monthly_bfd(
         Column name for streamflow
     bfd_col : str, default 'bfd'
         Column name for BFD indicator
+    min_bfd_days : int, default 1
+        Minimum number of bfd=1 days a month must contain to be retained.
+        Set from ``streamflow.min_bfd_days`` in config.yaml.
 
     Returns
     -------
@@ -273,6 +282,7 @@ def aggregate_streamflow_monthly_bfd(
         - gage_id: Gage identifier
         - date: Middle of month (15th day)
         - q: Average flow for bfd=1 periods in that month
+        - n_bfd_days: Number of bfd=1 days the monthly mean is based on
         - bfd: Set to 1 (since only bfd=1 data is used)
 
     Example
@@ -293,11 +303,17 @@ def aggregate_streamflow_monthly_bfd(
     bfd_data['year'] = bfd_data[date_col].dt.year
     bfd_data['month'] = bfd_data[date_col].dt.month
     
-    # Group by gage_id, year, and month, then compute mean of q
-    monthly_agg = bfd_data.groupby([gage_id_col, 'year', 'month']).agg({
-        q_col: 'mean'
-    }).reset_index()
-    
+    # Group by gage_id, year, and month, then compute mean of q and count the
+    # BFD days each mean rests on
+    monthly_agg = bfd_data.groupby([gage_id_col, 'year', 'month']).agg(
+        **{q_col: (q_col, 'mean'), 'n_bfd_days': (q_col, 'size')}
+    ).reset_index()
+
+    # Drop months too sparsely sampled to represent baseflow conditions
+    n_before = len(monthly_agg)
+    monthly_agg = monthly_agg[monthly_agg['n_bfd_days'] >= min_bfd_days]
+    n_dropped = n_before - len(monthly_agg)
+
     # Create date column set to middle of month (15th day)
     monthly_agg[date_col] = pd.to_datetime(
         monthly_agg[['year', 'month']].assign(day=15)
@@ -307,10 +323,12 @@ def aggregate_streamflow_monthly_bfd(
     monthly_agg[bfd_col] = 1
     
     # Select and reorder columns
-    result = monthly_agg[[gage_id_col, date_col, q_col, bfd_col]].copy()
+    result = monthly_agg[[gage_id_col, date_col, q_col, 'n_bfd_days', bfd_col]].copy()
     result = result.sort_values([gage_id_col, date_col])
-    
+
     print(f"Monthly BFD aggregation:")
+    print(f"  min_bfd_days: {min_bfd_days}")
+    print(f"  Months dropped below threshold: {n_dropped:,}")
     print(f"  Input records (bfd=1): {len(bfd_data):,}")
     print(f"  Monthly aggregated records: {len(result):,}")
     print(f"  Unique gages: {result[gage_id_col].nunique()}")

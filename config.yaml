@@ -26,6 +26,15 @@ filtering:
   # are excluded as hydrologically disconnected.
   elevation_buffer_m: 30.0
 
+# ── Streamflow Aggregation ────────────────────────────────────────────────────
+streamflow:
+  # Minimum number of baseflow-dominated (bfd=1) days a calendar month must
+  # contain for its mean discharge to be retained as a monthly observation.
+  # A value of 1 reproduces the originally submitted results, where a month
+  # represented by a single BFD day counted the same as a fully
+  # baseflow-dominated month.
+  min_bfd_days: 1
+
 # ── Step 4: Well Data Quality Filters ─────────────────────────────────────────
 # Applied to raw field measurements before PCHIP interpolation.
 # This is the single quality gate — all downstream steps and analyses
