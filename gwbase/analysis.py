@@ -670,7 +670,7 @@ def _mk_row(series: pd.Series, dates: pd.Series) -> dict:
             'sen_slope': np.nan, 'intercept': np.nan,
         }
     try:
-        res = mk.original_test(x)
+        res = mk.hamed_rao_modification_test(x)
         return {
             'trend': res.trend,
             'h': bool(res.h),
