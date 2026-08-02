@@ -25,6 +25,23 @@ well_gdf         = gpd.read_file(DATA / "raw/hydrography/well_shp.shp")
 stream_gdf       = gpd.read_file(DATA / "raw/hydrography/gslb_stream.shp")
 lake_gdf         = gpd.read_file(DATA / "raw/hydrography/gsl_lake.shp")
 
+# ── Mask lake-crossing GEOGLOWS routing artifacts (R2 comment 3) ─────────────
+# GEOGLOWS carries reaches *through* lake/reservoir polygons to preserve
+# upstream-downstream topology, so most lake-intersecting reaches in this
+# basin are routing artifacts, not real rivers crossing the lakebed. Reuses
+# the same lake-intersection test verified in
+# review1/revision_calcs/05_lake_reach_verification/ (notebooks/round1_lake_
+# reach_verification.py) rather than recomputing it from scratch. Bear
+# River's own terminal reach (LINKNO 710640970) is the one exception: it
+# legitimately drains into Bear River Bay and must be kept, not masked.
+BEAR_RIVER_OUTLET_LINKNO = 710640970
+_lake_for_mask = lake_gdf.to_crs(stream_gdf.crs)
+_lake_union = (_lake_for_mask.union_all() if hasattr(_lake_for_mask, "union_all")
+               else _lake_for_mask.unary_union)
+stream_gdf['LINKNO'] = stream_gdf['LINKNO'].astype('int64')
+_in_lake = stream_gdf.geometry.intersects(_lake_union)
+stream_gdf = stream_gdf[~_in_lake | (stream_gdf['LINKNO'] == BEAR_RIVER_OUTLET_LINKNO)].copy()
+
 major_streams = stream_gdf[stream_gdf['strmOrder'] >= 4].copy()
 print(f"  Streams total: {len(stream_gdf)}, order >= 4: {len(major_streams)}")
 

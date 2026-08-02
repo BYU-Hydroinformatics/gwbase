@@ -25,6 +25,23 @@ catches    = gpd.read_file(HYD / "gsl_catchment.shp")
 wells      = gpd.read_file(HYD / "well_shp.shp")
 gages_df   = pd.read_csv(HYD / "gsl_nwm_gage.csv").dropna(subset=["longitude", "latitude"])
 
+# ── Mask lake-crossing GEOGLOWS routing artifacts (R2 comment 3) ─────────────
+# GEOGLOWS carries reaches *through* lake/reservoir polygons to preserve
+# upstream-downstream topology, so most lake-intersecting reaches in this
+# basin are routing artifacts, not real rivers crossing the lakebed. Reuses
+# the same lake-intersection test verified in
+# review1/revision_calcs/05_lake_reach_verification/ (notebooks/round1_lake_
+# reach_verification.py) rather than recomputing it from scratch. Bear
+# River's own terminal reach (LINKNO 710640970) is the one exception: it
+# legitimately drains into Bear River Bay and must be kept, not masked.
+BEAR_RIVER_OUTLET_LINKNO = 710640970
+_lake_for_mask = lakes.to_crs(gsl_stream.crs)
+_lake_union = (_lake_for_mask.union_all() if hasattr(_lake_for_mask, "union_all")
+               else _lake_for_mask.unary_union)
+gsl_stream["LINKNO"] = gsl_stream["LINKNO"].astype("int64")
+_in_lake = gsl_stream.geometry.intersects(_lake_union)
+gsl_stream = gsl_stream[~_in_lake | (gsl_stream["LINKNO"] == BEAR_RIVER_OUTLET_LINKNO)].copy()
+
 major_streams = gsl_stream[gsl_stream["strmOrder"] >= 4]
 
 # Reproject all to basin CRS
