@@ -1,0 +1,2 @@
+basin_baseflow_mean_cfs,basin_baseflow_median_cfs,basin_all_mean_cfs,basin_p99_cfs,sens_point_cfs_per_ft,sens_ci_lo,sens_ci_hi,sens_point_pct_of_baseflow,sens_ci_lo_pct_of_baseflow,sens_ci_hi_pct_of_baseflow
+670.2240201376001,588.25,2334.4026735860148,12900.800000000028,3.949621302879585,-2.00223788458785,9.90148049034702,0.5892986798755303,-0.29874158854777866,1.477338948298839
