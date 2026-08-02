@@ -57,6 +57,13 @@ SHORT = {
     10168000: "Little Cottonwood",
 }
 
+# Ten-well catchment minimum (reviewer_1_response.md, Response 3): Spanish Fork
+# has only 7 wells and is excluded from the basin-sum/ranking numbers, but its
+# scatter and per-gage fit are still drawn for reference (manuscript Figures
+# 17/18 captions).
+SPANISH_FORK = 10152000
+RETAINED = [g for g in SHORT if g != SPANISH_FORK]
+
 CMAP = mplcm.get_cmap("tab10")
 gage_colors = {g: CMAP(i % 10) for i, g in enumerate(gages)}
 MIN_FIT = 30
@@ -72,7 +79,8 @@ def _fit(x, y):
 # Method 1 — Simple Sum
 # ══════════════════════════════════════════════════════════════════════════════
 def plot_simple_sum():
-    # Compute per-gage slopes first
+    # Compute per-gage slopes first (all gages, including Spanish Fork, so its
+    # dashed fit line is still drawn for reference).
     slopes = {}
     intercepts = {}
     for gage_id in gages:
@@ -83,7 +91,10 @@ def plot_simple_sum():
             slopes[gage_id] = slope
             intercepts[gage_id] = intercept
 
-    basin_total = sum(slopes.values())
+    # Basin sum excludes Spanish Fork (ten-well minimum) even though its fit
+    # line is still drawn above.
+    retained_slopes = {g: s for g, s in slopes.items() if g in RETAINED}
+    basin_total = sum(retained_slopes.values())
 
     fig, ax = plt.subplots(figsize=(9, 6.5))
 
@@ -115,9 +126,11 @@ def plot_simple_sum():
 
     ax.text(0.98, 0.97,
             f"GSLB simple sum\n"
-            f"N gages = {len(slopes)}\n"
+            f"N gages = {len(retained_slopes)}\n"
             f"Slope = {basin_total:.4f} cfs/ft\n"
-            f"(= Σ per-gage slopes)",
+            f"(= Σ per-gage slopes)\n"
+            f"Spanish Fork shown for reference,\n"
+            f"excluded from sum (<10 wells)",
             transform=ax.transAxes, fontsize=9.5, ha="right", va="top",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
                       alpha=0.92, edgecolor="#999999"))
@@ -164,9 +177,12 @@ def plot_normalized():
                     color=gage_colors[gage_id], linewidth=1.2,
                     linestyle="--", alpha=0.7, zorder=4)
 
-    # Pooled basin-scale fit on normalized data
-    all_x = data["delta_wte"].values
-    all_y = data["delta_q_norm"].values
+    # Pooled basin-scale fit on normalized data -- four retained catchments
+    # only (ten-well minimum excludes Spanish Fork, though its scatter and
+    # per-gage fit above are still drawn for reference).
+    pooled = data[data["gage_id"].isin(RETAINED)]
+    all_x = pooled["delta_wte"].values
+    all_y = pooled["delta_q_norm"].values
     xpad  = (all_x.max() - all_x.min()) * 0.03 or 1
     xlim  = (all_x.min() - xpad, all_x.max() + xpad)
     x_fit = np.linspace(xlim[0], xlim[1], 300)
@@ -180,7 +196,9 @@ def plot_normalized():
             f"N = {len(all_x):,}\n"
             f"Slope = {slope:.5f} ft⁻¹\n"
             f"R² = {r2:.4f}\n"
-            f"p = {p_str}",
+            f"p = {p_str}\n"
+            f"Spanish Fork shown for reference,\n"
+            f"excluded from pooled fit (<10 wells)",
             transform=ax.transAxes, fontsize=9.5, ha="right", va="top",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
                       alpha=0.92, edgecolor="#999999"))
