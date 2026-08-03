@@ -41,7 +41,7 @@ def make_plot(df, yscale, out_path):
             label="Discharge", zorder=2)
     bfd = df[df["bfd"] == 1]
     ax.scatter(bfd["date"], bfd["streamflow"], color="blue", s=8,
-               edgecolors="none", label="Baseflow", zorder=3)
+               edgecolors="none", label="Baseflow-dominated", zorder=3)
     ax.set_yscale(yscale)
     ax.set_xlabel("Date")
     ax.set_ylabel("Discharge (cfs)")
