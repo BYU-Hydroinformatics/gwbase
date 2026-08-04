@@ -9,6 +9,61 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import pandas as pd
+import networkx as nx
+import shapely.geometry as sgeom
+
+
+def filter_major_streams(stream_gdf, min_order=4, min_component_km=50):
+    """
+    Select the "major streams" to draw on a basin overview map.
+
+    Two problems with a naive `strmOrder >= min_order` cutoff, both found by
+    inspecting the rendered map rather than assumed up front:
+
+    1. A hard order cutoff strands reaches whose immediate up/downstream
+       neighbors fall below the cutoff, breaking otherwise-continuous rivers
+       into disconnected-looking pieces. Grouping by the GEOGLOWS
+       LINKNO/DSLINKNO attribute chain and keeping only components with at
+       least `min_component_km` of total length recovers the ~9 major named
+       river systems in this basin.
+    2. That attribute chain is not fully reliable: a handful of reaches
+       still render as isolated squiggles because DSLINKNO links them to a
+       large component they don't actually touch on the ground. These are
+       removed by explicit bounding box below. Coordinates come from
+       querying each piece's exact geometric bounds directly, not from
+       eyeballing a rendered image.
+
+    Caveat: the box list is tied to this exact GEOGLOWS shapefile snapshot.
+    If the source data changes, re-derive them rather than assuming they
+    still apply.
+    """
+    major = stream_gdf[stream_gdf["strmOrder"] >= min_order].copy()
+
+    linknos = set(major["LINKNO"])
+    graph = nx.Graph()
+    graph.add_nodes_from(linknos)
+    for _, row in major.iterrows():
+        if row["DSLINKNO"] in linknos:
+            graph.add_edge(row["LINKNO"], row["DSLINKNO"])
+    length_km = dict(zip(major["LINKNO"], major.to_crs(3857).geometry.length / 1000))
+    keep = set()
+    for component in nx.connected_components(graph):
+        if sum(length_km.get(l, 0) for l in component) >= min_component_km:
+            keep |= component
+    major = major[major["LINKNO"].isin(keep)]
+
+    isolated_boxes = [
+        (-112.45, 40.14, -112.24, 40.46),  # ~77.5 km piece, lat 40.2-40.4
+        (-113.54, 39.14, -113.44, 39.41),  # ~55.5 km piece, lat 39.2-39.4
+        (-113.74, 38.26, -113.64, 38.65),  # ~81.4 km piece, lat 38.3-38.6
+        (-112.25, 40.16, -112.21, 40.20),  # 3-reach sliver of an 89 km component
+    ]
+    for minx, miny, maxx, maxy in isolated_boxes:
+        box = sgeom.box(minx, miny, maxx, maxy)
+        major = major[~major.geometry.intersects(box)]
+
+    return major
+
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE = Path(__file__).parent
@@ -26,23 +81,20 @@ wells      = gpd.read_file(HYD / "well_shp.shp")
 gages_df   = pd.read_csv(HYD / "gsl_nwm_gage.csv").dropna(subset=["longitude", "latitude"])
 
 # ── Mask lake-crossing GEOGLOWS routing artifacts (R2 comment 3) ─────────────
-# GEOGLOWS carries reaches *through* lake/reservoir polygons to preserve
-# upstream-downstream topology, so most lake-intersecting reaches in this
-# basin are routing artifacts, not real rivers crossing the lakebed. Reuses
-# the same lake-intersection test verified in
-# review1/revision_calcs/05_lake_reach_verification/ (notebooks/round1_lake_
-# reach_verification.py) rather than recomputing it from scratch. Bear
-# River's own terminal reach (LINKNO 710640970) is the one exception: it
-# legitimately drains into Bear River Bay and must be kept, not masked.
-BEAR_RIVER_OUTLET_LINKNO = 710640970
-_lake_for_mask = lakes.to_crs(gsl_stream.crs)
-_lake_union = (_lake_for_mask.union_all() if hasattr(_lake_for_mask, "union_all")
-               else _lake_for_mask.unary_union)
+# GEOGLOWS routes reaches *through* lake/reservoir polygons to preserve
+# upstream-downstream network topology across standing water bodies, so
+# reaches entirely contained within the lake are a synthetic connectivity
+# mesh, not real channels. Reaches that merely clip the lake's edge (e.g.
+# Bear River's real outlet into Bear River Bay) are kept. Reuses the same
+# lake-intersection test verified in review1/revision_calcs/
+# 05_lake_reach_verification/ (notebooks/round1_lake_reach_verification.py).
 gsl_stream["LINKNO"] = gsl_stream["LINKNO"].astype("int64")
-_in_lake = gsl_stream.geometry.intersects(_lake_union)
-gsl_stream = gsl_stream[~_in_lake | (gsl_stream["LINKNO"] == BEAR_RIVER_OUTLET_LINKNO)].copy()
+gsl_stream["DSLINKNO"] = gsl_stream["DSLINKNO"].astype("int64")
+lake_gdf = lakes.to_crs(gsl_stream.crs)
+lake_union = lake_gdf.union_all() if hasattr(lake_gdf, "union_all") else lake_gdf.unary_union
+gsl_stream = gsl_stream[~gsl_stream.geometry.within(lake_union)].copy()
 
-major_streams = gsl_stream[gsl_stream["strmOrder"] >= 4]
+major_streams = filter_major_streams(gsl_stream)
 
 # Reproject all to basin CRS
 target_crs = basin.crs
