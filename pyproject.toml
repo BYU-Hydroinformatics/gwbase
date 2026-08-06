@@ -4,13 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gwbase"
-version = "0.1.0"
+version = "0.2.0"
 description = "Groundwater-Surface Water Interaction Analysis Library"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "BYU Hydroinformatics"}
+    {name = "Xueyi Li"},
+    {name = "Norman L. Jones", email = "njones@byu.edu"},
+    {name = "Gustavious P. Williams"},
+    {name = "Riley C. Hales"}
 ]
 keywords = ["groundwater", "hydrology", "water-resources", "geospatial"]
 classifiers = [

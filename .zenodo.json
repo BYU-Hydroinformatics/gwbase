@@ -1,12 +1,30 @@
 {
-  "title": "GWBASE: Groundwater-Surface Water Interaction Analysis Library",
+  "title": "GWBASE: An Algorithm for Screening Groundwater–Baseflow Coupling Using Paired USGS Well and Streamflow Records",
   "description": "A comprehensive Python library for analyzing groundwater-surface water interactions using time series correlation, spatial analysis, and statistical methods.",
   "upload_type": "software",
   "access_right": "open",
   "license": "MIT",
+  "version": "0.2.0",
   "creators": [
     {
-      "name": "BYU Hydroinformatics"
+      "name": "Li, Xueyi",
+      "affiliation": "Civil and Construction Engineering, Brigham Young University, Provo, UT, USA",
+      "orcid": "0000-0002-2616-843X"
+    },
+    {
+      "name": "Jones, Norman L.",
+      "affiliation": "Civil and Construction Engineering, Brigham Young University, Provo, UT, USA",
+      "orcid": "0000-0002-8267-1419"
+    },
+    {
+      "name": "Williams, Gustavious P.",
+      "affiliation": "Civil and Construction Engineering, Brigham Young University, Provo, UT, USA",
+      "orcid": "0000-0002-2781-0738"
+    },
+    {
+      "name": "Hales, Riley C.",
+      "affiliation": "Civil and Construction Engineering, Brigham Young University, Provo, UT, USA",
+      "orcid": "0000-0001-8517-5755"
     }
   ],
   "keywords": [

@@ -1,10 +1,29 @@
 cff-version: 1.2.0
-title: "GWBASE: Groundwater-Surface Water Interaction Analysis Library"
+title: "GWBASE: An Algorithm for Screening Groundwater–Baseflow Coupling Using Paired USGS Well and Streamflow Records"
 message: "If you use this software, please cite it using these metadata."
 type: software
-doi: 10.5281/zenodo.20765755
+# Concept DOI: always resolves to the latest version, so this entry does not
+# go stale on each release. Cite the version-specific DOI when pinning results
+# to a particular release.
+doi: 10.5281/zenodo.20765754
 authors:
-  - name: "BYU Hydroinformatics"
+  - family-names: "Li"
+    given-names: "Xueyi"
+    orcid: "https://orcid.org/0000-0002-2616-843X"
+    affiliation: "Civil and Construction Engineering, Brigham Young University"
+  - family-names: "Jones"
+    given-names: "Norman L."
+    orcid: "https://orcid.org/0000-0002-8267-1419"
+    affiliation: "Civil and Construction Engineering, Brigham Young University"
+    email: njones@byu.edu
+  - family-names: "Williams"
+    given-names: "Gustavious P."
+    orcid: "https://orcid.org/0000-0002-2781-0738"
+    affiliation: "Civil and Construction Engineering, Brigham Young University"
+  - family-names: "Hales"
+    given-names: "Riley C."
+    orcid: "https://orcid.org/0000-0001-8517-5755"
+    affiliation: "Civil and Construction Engineering, Brigham Young University"
 abstract: >-
   A comprehensive Python library for analyzing groundwater-surface
   water interactions using time series correlation, spatial analysis,
@@ -17,4 +36,4 @@ keywords:
 repository-code: "https://github.com/BYU-Hydroinformatics/gwbase"
 url: "https://github.com/BYU-Hydroinformatics/gwbase"
 license: MIT
-version: 0.1.0
+version: 0.2.0
