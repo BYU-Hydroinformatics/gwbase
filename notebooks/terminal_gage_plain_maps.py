@@ -108,8 +108,8 @@ for _, trow in term_gdf.iterrows():
     fig = plt.figure(figsize=(15, 11))
     gs = gridspec.GridSpec(
         2, 2, figure=fig,
-        width_ratios=[0.72, 0.28],
-        height_ratios=[0.50, 0.50],
+        width_ratios=[0.68, 0.32],
+        height_ratios=[0.42, 0.58],
         hspace=0.05, wspace=0.02,
         left=0.01, right=0.99, top=0.99, bottom=0.04,
     )
@@ -142,9 +142,33 @@ for _, trow in term_gdf.iterrows():
 
     try:
         import contextily as ctx
-        ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, zoom=10, alpha=0.45)
+        # CartoDB's free anonymous tile tier now returns "API KEY REQUIRED"
+        # watermarks for uncached tiles; Esri's gray canvas is label-free,
+        # visually equivalent, and works without a key.
+        ctx.add_basemap(ax, source=ctx.providers.Esri.WorldGrayCanvas,
+                        zoom=10, alpha=0.55)
     except Exception:
         ax.set_facecolor("#EAF2F8")
+
+    # ── Great Salt Lake label — only drawn on the main map, and only when the
+    #    lake actually falls inside this gage's plotted extent (the inset
+    #    copy is too small to be legible, so it lives here instead).
+    if not gsl.empty:
+        from shapely.geometry import box as _box
+        view_box = _box(ax.get_xlim()[0], ax.get_ylim()[0],
+                         ax.get_xlim()[1], ax.get_ylim()[1])
+        gsl_geom = gsl.geometry.iloc[0]
+        if gsl_geom.intersects(view_box):
+            gsl_visible = gsl_geom.intersection(view_box)
+            if not gsl_visible.is_empty:
+                label_pt = gsl_visible.representative_point()
+                ax.annotate(
+                    "Great Salt Lake", xy=(label_pt.x, label_pt.y),
+                    ha="center", va="center", fontsize=15, fontweight="bold",
+                    color="#1A5276", zorder=6,
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
+                              edgecolor="none", alpha=0.65),
+                )
     ax.set_axis_off()
 
     # ── Inset ─────────────────────────────────────────────────────────────────
@@ -153,10 +177,6 @@ for _, trow in term_gdf.iterrows():
     if not gsl.empty:
         gsl.plot(ax=ax_ins, facecolor=COL_LAKE, edgecolor=COL_LAKE_EDGE,
                  linewidth=0.5, alpha=0.9, zorder=2)
-        if gsl_centroid:
-            ax_ins.annotate("Great\nSalt Lake", xy=(gsl_centroid.x, gsl_centroid.y),
-                            ha="center", va="center", fontsize=5.5,
-                            color="#1A5276", fontweight="bold", zorder=6)
     if not upstream_catch.empty:
         upstream_catch.plot(ax=ax_ins, facecolor=COL_UPSTREAM, edgecolor=COL_UP_EDGE,
                             linewidth=0.2, alpha=0.85, zorder=3)
@@ -165,7 +185,7 @@ for _, trow in term_gdf.iterrows():
                             linewidth=0.8, alpha=0.95, zorder=4)
     ax_ins.scatter(trow.geometry.x, trow.geometry.y, s=200, marker="*",
                    facecolor=COL_GAGE, edgecolor="white", linewidth=0.8, zorder=7)
-    ax_ins.set_aspect("equal")
+    ax_ins.set_aspect("equal", anchor="W")   # hug the main map instead of centering
     ax_ins.set_xticks([])
     ax_ins.set_yticks([])
     for spine in ax_ins.spines.values():
@@ -187,25 +207,26 @@ for _, trow in term_gdf.iterrows():
                        label=f"Upstream catchments ({len(upstream_only_ids)})"),
         mpatches.Patch(facecolor=COL_TERMINAL, edgecolor=COL_TERM_EDGE,
                        linewidth=1.5, label="Terminal gage catchment"),
-        mlines.Line2D([0], [0], color=COL_STREAM, linewidth=2.0,
+        mlines.Line2D([0], [0], color=COL_STREAM, linewidth=2.5,
                       label=f"Streams ({len(streams_clip)})"),
         mpatches.Patch(facecolor=COL_LAKE, edgecolor=COL_LAKE_EDGE,
                        label=f"Lakes ({len(lakes_clip)})"),
         mlines.Line2D([0], [0], marker="o", color="w",
-                      markerfacecolor=COL_WELL, markersize=10,
+                      markerfacecolor=COL_WELL, markersize=14,
                       markeredgecolor="white", markeredgewidth=0.5,
                       linewidth=0, label=f"Wells ({len(wells_clip)})"),
         mlines.Line2D([0], [0], marker="*", color="w",
-                      markerfacecolor=COL_GAGE, markersize=16,
+                      markerfacecolor=COL_GAGE, markersize=22,
                       markeredgecolor="white", markeredgewidth=0.8,
                       linewidth=0, label=f"Terminal gage ({gage_id})"),
     ]
     ax_leg.set_axis_off()
-    leg = ax_leg.legend(handles=legend_elements, loc="upper center",
-                        fontsize=9, framealpha=0.95, edgecolor="#aaaaaa",
-                        title="Map Elements", title_fontsize=10,
-                        frameon=True, borderpad=1.0,
-                        handlelength=2.0, handleheight=1.2)
+    leg = ax_leg.legend(handles=legend_elements, loc="center left",
+                        bbox_to_anchor=(0.0, 0.5),
+                        fontsize=15, framealpha=0.95, edgecolor="#aaaaaa",
+                        title="Map Elements", title_fontsize=17,
+                        frameon=True, borderpad=1.4,
+                        labelspacing=1.1, handlelength=2.8, handleheight=1.8)
     ax_leg.add_artist(leg)
 
 
