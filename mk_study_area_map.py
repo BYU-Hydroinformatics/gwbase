@@ -19,8 +19,12 @@ OUT  = BASE / "results" / "analysis" / "maps" / "overview"
 OUT.mkdir(parents=True, exist_ok=True)
 
 # ── Natural Earth helpers ──────────────────────────────────────────────────────
-NE_STATES_DIR = Path.home() / ".cache" / "ne_110m_admin_1_states_provinces"
-NE_STATES_SHP = NE_STATES_DIR / "ne_110m_admin_1_states_provinces.shp"
+NE_STATES_DIR = Path.home() / ".cache" / "ne_50m_admin_1_states_provinces"
+NE_STATES_SHP = NE_STATES_DIR / "ne_50m_admin_1_states_provinces.shp"
+
+NE_LINES_DIR = Path.home() / ".cache" / "ne_50m_admin_1_states_provinces_lines"
+NE_LINES_SHP = NE_LINES_DIR / "ne_50m_admin_1_states_provinces_lines.shp"
+
 
 def _download_ne(url, dest_dir):
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -40,8 +44,14 @@ states = conus = None
 try:
     if not NE_STATES_SHP.exists():
         _download_ne(
-            "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_1_states_provinces.zip",
+            "https://naciscdn.org/naturalearth/50m/cultural/ne_50m_admin_1_states_provinces.zip",
             NE_STATES_DIR,
+        )
+    if not NE_LINES_SHP.exists():
+        _download_ne(
+            "https://naciscdn.org/naturalearth/50m/cultural/"
+            "ne_50m_admin_1_states_provinces_lines.zip",
+            NE_LINES_DIR,
         )
     _all = gpd.read_file(NE_STATES_SHP)
     states = _all[_all["iso_a2"] == "US"]
@@ -56,6 +66,10 @@ basin_wm  = basin.to_crs(CRS)
 rivers_wm = rivers.to_crs(CRS)
 lakes_wm  = lakes.to_crs(CRS)
 states_wm = states.to_crs(CRS) if states is not None else None
+try:
+    borders_wm = gpd.read_file(NE_LINES_SHP).to_crs(CRS)
+except Exception:
+    borders_wm = None
 
 # ── Map extent with asymmetric padding ────────────────────────────────────────
 # Extra padding on the RIGHT and BOTTOM creates white space for legend / scale
@@ -111,15 +125,8 @@ ax.add_patch(mpatches.FancyBboxPatch(
     transform=ax.transAxes, zorder=20, clip_on=False,
 ))
 
-# ── Basemap ────────────────────────────────────────────────────────────────────
-try:
-    import contextily as ctx
-    ctx.add_basemap(ax, source=ctx.providers.CartoDB.Positron, zoom=7, alpha=0.7,
-                    attribution_size=5)
-    print("Basemap added.")
-except Exception as e:
-    print(f"Basemap skipped: {e}")
-    ax.set_facecolor("#e8eef4")
+# ── Background ────────────────────────────────────────────────────────────────
+ax.set_facecolor("#F2F4F5")
 
 # ── State boundaries — clipped so far-left fragments don't appear ─────────────
 if states_wm is not None:
@@ -127,10 +134,39 @@ if states_wm is not None:
     _clip = gpd.GeoDataFrame(
         geometry=[_box(minx, y0, x1, y1)], crs=CRS
     )
-    gpd.clip(states_wm, _clip).plot(
-        ax=ax, facecolor="none", edgecolor="#444444",
-        linewidth=1.0, linestyle="--", zorder=2,
+    _states_vis = gpd.clip(states_wm, _clip)
+    _view = _box(x0, y0, x1, y1)      # full drawn extent, so lines reach the edge
+    if borders_wm is not None:
+        _bl = borders_wm.geometry.intersection(_view)
+    else:
+        _bl = gpd.GeoSeries([states_wm.geometry.boundary.unary_union],
+                            crs=CRS).intersection(_view)
+    gpd.GeoSeries(_bl[~_bl.is_empty].values, crs=CRS).plot(
+        ax=ax, color="#444444", linewidth=1.0, linestyle="--", zorder=2,
     )
+    # State names, set in the open ground of each state's visible portion.
+    for _, _st in _states_vis.iterrows():
+        _g = _st.geometry
+        if _g.is_empty:
+            continue
+        _name = str(_st["name"]).upper()
+        # Utah and Nevada are placed by hand; their largest ice-free area sits
+        # where the label collides with the basin outline or the legend.
+        _fixed = {"UTAH": (0.511, 0.260), "NEVADA": (0.078, 0.422)}
+        if _name in _fixed:
+            ax.annotate(_name, xy=_fixed[_name], xycoords="axes fraction",
+                        ha="center", va="center", fontsize=11, color="#8E9BA6",
+                        fontweight="bold", zorder=3)
+            continue
+        _outside = _g.difference(basin_wm.unary_union)
+        if _outside.is_empty:
+            continue
+        _parts = list(getattr(_outside, "geoms", [_outside]))
+        _big   = max(_parts, key=lambda q: q.area)
+        _p     = _big.representative_point()
+        ax.annotate(_name, xy=(_p.x, _p.y),
+                    ha="center", va="center", fontsize=11, color="#8E9BA6",
+                    fontweight="bold", zorder=3)
 
 # ── GSLB boundary ─────────────────────────────────────────────────────────────
 basin_wm.plot(ax=ax, facecolor="none", edgecolor="#CC0000", linewidth=2.2, zorder=3)
@@ -219,8 +255,8 @@ legend_handles = [
 #   inset  →  gap  →  scale bar  →  gap  →  legend
 # Elements left-edge at the basin's eastern boundary; stack in lower-right quadrant
 INS_Y0  = 0.015
-INS_H   = 0.110
-_sb_bot = INS_Y0 + INS_H + 0.025
+INS_H   = 0.125      # enlarged locator inset
+_sb_bot = 0.165          # pinned: legend and scale bar must not move
 BAR_Y   = _sb_bot + 0.038   # moved up closer to legend
 _sb_top = BAR_Y   + 0.010 + 0.018
 LEG_Y   = _sb_top + 0.006
@@ -269,10 +305,13 @@ ax.text(bar_x0_f + bar_w_f / 2, BAR_Y - 0.006, "100 km",
 # ── USA location inset — pixel-exact same width as legend via fig.add_axes ────
 # Convert legend display-px bounds → figure fraction so width matches exactly.
 _fb   = fig.get_window_extent()
-_ins_fig_left   = (_lb.x0 - _fb.x0) / _fb.width
-_ins_fig_width  = _lb.width           / _fb.width
-_ins_fig_bottom = (_ab.y0 + INS_Y0 * _ab.height - _fb.y0) / _fb.height
-_ins_fig_height = INS_H * _ab.height / _fb.height
+INS_FRAC        = 0.34        # share of the map frame width
+_ins_fig_width  = INS_FRAC * _ab.width / _fb.width
+_ins_fig_left   = (_ab.x1 - _fb.x0) / _fb.width - _ins_fig_width - 0.012
+_cb = conus.to_crs("EPSG:5070").total_bounds if conus is not None else (0, 0, 1.55, 1.0)
+_ins_fig_height = (_ins_fig_width * _fb.width
+                   * ((_cb[3] - _cb[1]) / (_cb[2] - _cb[0])) / _fb.height)
+_ins_fig_bottom = (_ab.y0 - _fb.y0) / _fb.height + 0.012
 ax_ins = fig.add_axes([_ins_fig_left, _ins_fig_bottom,
                         _ins_fig_width, _ins_fig_height])
 ax_ins.set_facecolor("none")
